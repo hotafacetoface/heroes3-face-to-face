@@ -274,116 +274,94 @@ async function loadHeroesData() {
 }
 
     // Функция для отображения/скрытия подменю
-    function toggleDropdown(menuId, dropdownId) {
-      const menu = document.getElementById(menuId);
-      const dropdown = document.getElementById(dropdownId);
-      
-      // Закрываем все другие подменю
-      document.querySelectorAll('.dropdown-menu').forEach(d => {
-        if (d !== dropdown) d.classList.remove('show');
+    // === Функция для отображения/скрытия подменю ===
+function toggleDropdown(menuId, dropdownId) {
+  const menu = document.getElementById(menuId);
+  const dropdown = document.getElementById(dropdownId);
+
+  // Закрываем все другие подменю
+  document.querySelectorAll('.dropdown-menu').forEach(d => {
+    if (d !== dropdown) d.classList.remove('show');
+  });
+
+  // Переключаем текущее подменю
+  dropdown.classList.toggle('show');
+}
+
+// === Функция инициализации меню ===
+function initMenu() {
+  const statsMenu = document.getElementById('stats-menu');
+  const authMenu = document.getElementById('auth-menu');
+  if (!statsMenu || !authMenu) return;
+
+  const authUser = localStorage.getItem("authUser");
+
+  if (authUser) {
+    authMenu.innerHTML = `
+      <li class="has-dropdown">
+        <a href="#" class="menu-item">${authUser}</a>
+        <div class="dropdown-menu">
+          <a href="my-stats.html">Моя статистика</a>
+          <a href="history.html">История матчей</a>
+          <a href="match-publish.html" class="dropdown-item">Опубликовать матч</a>
+          <a href="#" id="logoutBtn">Выйти</a>
+        </div>
+      </li>
+    `;
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.removeItem("authUser");
+        window.location.reload();
       });
-      
-      // Переключаем текущее подменю
-      dropdown.classList.toggle('show');
     }
-
-// Функция инициализации меню (можно вызвать повторно)
-    function initMenu() {
-      const statsMenu = document.getElementById('stats-menu');
-      if (!statsMenu) return; // меню еще не вставлено
-  // === Авторизация ===
-  const authMenu = document.getElementById("auth-menu");
-  if (authMenu) {
-    const authUser = localStorage.getItem("authUser");
-if (authUser) {
-  authMenu.innerHTML = `
-    <li class="has-dropdown">
-      <a href="#" class="menu-item">${authUser}</a>
-      <div class="dropdown-menu">
-        <a href="my-stats.html">Моя статистика</a>
-        <a href="history.html">История матчей</a>
-        <a href="match-publish.html" class="dropdown-item">Опубликовать матч</a>
-        <a href="#" id="logoutBtn">Выйти</a>
-      </div>
-    </li>
-  `;
-
-  // обработчик выхода
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      localStorage.removeItem("authUser");
-      window.location.reload();
-    });
+  } else {
+    authMenu.innerHTML = `
+      <li><a href="register.html" class="menu-item">Регистрация</a></li>
+      <li><a href="login.html" class="menu-item">Войти</a></li>
+    `;
   }
 
-  // навешиваем переходы на новые ссылки
-  document.querySelectorAll('.dropdown-menu a').forEach(link => {
-    const href = link.getAttribute('href');
-    if (href && href !== '#') {
-      link.addEventListener('click', e => {
-        e.preventDefault();
-        window.location.href = href;
-      });
+  // Наведение и закрытие подменю
+  const statsDropdown = document.getElementById('stats-dropdown');
+  const databaseMenu = document.getElementById('database-menu');
+  const databaseDropdown = document.getElementById('database-dropdown');
+
+  statsMenu.addEventListener('mouseenter', () => statsDropdown.classList.add('show'));
+  statsMenu.addEventListener('mouseleave', () => setTimeout(() => {
+    if (!statsMenu.matches(':hover') && !statsDropdown.matches(':hover')) statsDropdown.classList.remove('show');
+  }, 300));
+
+  databaseMenu.addEventListener('mouseenter', () => databaseDropdown.classList.add('show'));
+  databaseMenu.addEventListener('mouseleave', () => setTimeout(() => {
+    if (!databaseMenu.matches(':hover') && !databaseDropdown.matches(':hover')) databaseDropdown.classList.remove('show');
+  }, 300));
+
+  document.addEventListener('click', (event) => {
+    if (!statsMenu.contains(event.target) && !statsDropdown.contains(event.target)) {
+      statsDropdown.classList.remove('show');
+    }
+    if (!databaseMenu.contains(event.target) && !databaseDropdown.contains(event.target)) {
+      databaseDropdown.classList.remove('show');
     }
   });
+
+  document.querySelectorAll('.menu-item').forEach(item => {
+    item.addEventListener('click', function(e) {
+      if (!this.id.includes('menu')) {
+        document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+      }
+      if ((this.id === 'stats-menu' || this.id === 'database-menu') && !this.matches(':hover')) {
+        const dropdown = this.querySelector('.dropdown-menu');
+        if (dropdown) dropdown.classList.remove('show');
+      }
+    });
+  });
 }
-  }
 
-      const statsDropdown = document.getElementById('stats-dropdown');
-      const databaseMenu = document.getElementById('database-menu');
-      const databaseDropdown = document.getElementById('database-dropdown');
-      
-      // Показать подменю при наведении
-      statsMenu.addEventListener('mouseenter', function() {
-        statsDropdown.classList.add('show');
-      });
-      
-      statsMenu.addEventListener('mouseleave', function() {
-        setTimeout(() => {
-          if (!statsMenu.matches(':hover') && !statsDropdown.matches(':hover')) {
-            statsDropdown.classList.remove('show');
-          }
-        }, 300);
-      });
-
-      databaseMenu.addEventListener('mouseenter', function() {
-        databaseDropdown.classList.add('show');
-      });
-      
-      databaseMenu.addEventListener('mouseleave', function() {
-        setTimeout(() => {
-          if (!databaseMenu.matches(':hover') && !databaseDropdown.matches(':hover')) {
-            databaseDropdown.classList.remove('show');
-          }
-        }, 300);
-      });
-
-      document.addEventListener('click', function(event) {
-        if (!statsMenu.contains(event.target) && !statsDropdown.contains(event.target)) {
-          statsDropdown.classList.remove('show');
-        }
-        if (!databaseMenu.contains(event.target) && !databaseDropdown.contains(event.target)) {
-          databaseDropdown.classList.remove('show');
-        }
-      });
-
-      document.querySelectorAll('.menu-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-          if (!this.id.includes('menu')) {
-            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-            this.classList.add('active');
-          }
-          if ((this.id === 'stats-menu' || this.id === 'database-menu') && !this.matches(':hover')) {
-            const dropdown = this.querySelector('.dropdown-menu');
-            if (dropdown) dropdown.classList.remove('show');
-          }
-        });
-      });
-    }
-
-    // Автоинициализация, если меню встроено (index.html)
+// === Автоинициализация при загрузке страницы ===
 document.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname;
 
@@ -393,4 +371,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Инициализация меню для всех страниц
+  initMenu();
 });
