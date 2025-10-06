@@ -1,0 +1,840 @@
+/* style.css — объединённая, очищенная и улучшенная версия
+   Сохранены оригинальные стили проекта + добавлены стили секций/CTA/кнопок
+   Палитра и акценты соответствуют main.html (e0b050 / ffdd55 / b08030).
+*/
+
+/* ======= БАЗОВЫЕ СТИЛИ ======= */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Press Start 2P', cursive; color: #e0d0a0; font-size: 0.75rem; }
+body { background: url('https://iili.io/KGogCiP.gif') no-repeat center center fixed; background-size: cover; padding: 15px; background-color: #0a0a1a; }
+
+/* ======= КОНТЕЙНЕР ======= */
+.container { max-width: 1500px; margin: 20px auto; padding: 20px; border: 3px solid #6e4f1a; border-radius: 8px; background: rgba(0,15,50,0.08); }
+
+/* ======= ЗАГОЛОВОК СТРАНИЦЫ ======= */
+@keyframes pulse {
+  0% { text-shadow: 0 2px 4px #000, 0 0 10px rgba(255, 255, 0, 0.7); }
+  100% { text-shadow: 0 2px 8px #000, 0 0 20px rgba(255, 255, 0, 0.9); }
+}
+h1 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  color: #ffdd55;
+  text-shadow: 0 2px 4px #000, 0 0 10px rgba(255, 255, 0, 0.7);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #e0b050, #ffdd55);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+  padding: 5px 0;
+  border-bottom: 2px solid #b08030;
+  animation: pulse 2s infinite alternate;
+}
+
+/* ======= ТАБЛИЦА ======= */
+.table-container { max-width: 75%; margin: 0 auto; }
+.table-responsive { overflow-x: auto; border-radius: 4px; padding: 6px; }
+
+.table {
+  background: rgba(0, 25, 70, 0.85);
+  border: 1px solid #004488;
+  color: #e0e0e0;
+  border-collapse: collapse;
+  width: 80% !important;
+  margin: 0 auto;
+  table-layout: fixed;
+  font-size: 0.7rem;
+}
+.table th {
+  background: rgba(0, 40, 120, 0.9);
+  color: #f0d070;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 5px;
+  white-space: nowrap;
+  position: relative;
+  border: 2px solid #b08030;
+  border-top: 1px solid #e0c060;
+  border-left: 1px solid #e0c060;
+  box-shadow: inset 0 0 6px rgba(255, 220, 120, 0.5);
+}
+.table td {
+  padding: 8px;
+  border-top: 1px solid #004488;
+  border-right: 1px solid #805020;
+  background: rgba(0,20,60,0.65);
+  vertical-align: middle;
+  overflow: hidden;
+}
+.table col { width: auto !important; }
+
+/* ======= ИКОНКИ ======= */
+.castle-icon, .hero-icon {
+  width: 48px;
+  height: 48px;
+  display: block;
+  margin: 0 auto;
+  border: 1px solid #a07030;
+  border-radius: 2px;
+  object-fit: cover;
+}
+.hero-name { text-align: center; color: #f0d070; font-weight: bold; margin-top: 6px; }
+.spec-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.spec-icon { width: 36px; height: 36px; display: block; margin: 0 auto; }
+.spec-name { font-size: 0.75rem; color: #a0c0f0; margin-top: 4px; }
+.spell { color: #c0a0f0; }
+
+/* Навыки */
+th.skills-column { text-align: center; vertical-align: middle; white-space: nowrap; }
+td.skills-column {
+  text-align: center; vertical-align: middle; padding: 8px 10px;
+  width: 135px !important; max-width: 150px !important; box-sizing: border-box;
+}
+.skills-column .icon-container { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.skills-column .icon-img { width: 40px; height: 40px; image-rendering: pixelated; }
+.skills-column .icon-label { font-size: 0.85rem; color: #f0d070; white-space: nowrap; }
+
+/* Артефакты и параметры */
+th.art-column, td.art-column { text-align: center; vertical-align: middle; }
+td.parameters-column {
+  text-align: center; vertical-align: middle; font-size: 16px; white-space: nowrap;
+}
+td.parameters-column .stat-icon { width: 28px; height: 28px; vertical-align: middle; margin-left: 6px; }
+
+/* ======= LOADER & DEBUG ======= */
+.loader-container {
+  display: flex; position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+  align-items: center; justify-content: center; background: rgba(0,0,0,0.7); z-index: 10000;
+}
+.loader-box {
+  background: rgba(0, 25, 70, 0.9); padding: 20px 30px; border-radius: 10px; border: 2px solid #b08030; text-align: center;
+}
+.loader-header { color: #ffdd55; margin-bottom: 10px; font-weight: bold; }
+.loader-bar { width: 200px; height: 12px; background: #222; border: 1px solid #555; border-radius: 6px; margin: 0 auto 10px; overflow: hidden; }
+.loader-fill { width: 0; height: 100%; background: linear-gradient(90deg, #ffdd55, #ffaa00); transition: width 0.3s ease; }
+.loader-text { font-size: 0.8rem; color: #ffdd55; }
+.debug-info { display: none; font-family: monospace; font-size: 0.8rem; color: #0f0; padding: 8px; background: #111; border-radius: 6px; margin-top: 8px; }
+
+/* ======= Небольшой ресет для таблицы ======= */
+.table th, .table td { box-sizing: border-box; }
+.column-header { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.column-title { text-align: center; margin-bottom: 4px; display:flex; align-items:center; justify-content:center; width:100%; padding:0 5px; height:20px; font-weight:bold; font-size:0.8rem; color:#ffdd88; text-shadow:0 1px 2px #000; }
+
+/* ======= CASTLE CELL ======= */
+.castle-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.castle-name { margin-top: 4px; text-align: center; }
+
+/* ======= МЕНЮ (единый, аккуратный) — ЗАМЕНА (вставить целиком) ======= */
+.menu-container {
+  background: rgba(0, 68, 136, 0.7);
+  border: 2px solid #6e4f1a;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(200, 150, 50, 0.4);
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  position: relative;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+/* общая полоса меню */
+.main-menu {
+  display: flex;
+  align-items: center;      /* выравнивание кнопок по центру */
+  justify-content: flex-start; /* или center — если хочешь ровно по центру */
+  gap: 15px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Сброс для всех ссылок в меню: убираем подчёркивание и наследуем цвет */
+.main-menu a {
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+}
+
+/* Унифицированный стиль для пунктов меню:
+   поддерживает оба варианта разметки:
+     <li class="menu-item">Текст</li>
+     <li><a class="menu-item">Текст</a></li>
+*/
+.main-menu > li > a.menu-item {
+  color: #ffdd88;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  white-space: nowrap;
+  text-shadow: 1px 1px 2px #000;
+  font-weight: bold;
+  display: block; /* важное отличие — ссылка занимает всю кнопку */
+}
+.main-menu > li > a.menu-item:hover,
+.main-menu > li > a.menu-item.active {
+  background: linear-gradient(to right, #e0b050, #ffdd55);
+  color: #000;
+  text-shadow: 0 0 3px #fff;
+  box-shadow: 0 0 8px rgba(255, 220, 100, 0.6);
+  transform: translateY(-2px);
+}
+.has-dropdown {
+  position: relative;
+}
+/* Подменю (по умолчанию скрыто) */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: rgba(0, 68, 136, 0.9);
+  border: 1px solid #6e4f1a;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  min-width: 180px;
+  display: none;
+  flex-direction: column;
+  z-index: 1001;
+  padding: 8px 0;
+}
+
+/* Элементы подменю */
+.dropdown-item {
+  color: #e0d0a0;
+  padding: 8px 20px;
+  text-decoration: none;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  display: block;
+}
+.dropdown-item:hover {
+  background: #e0b050;
+  color: #000;
+  padding-left: 24px;
+}
+
+/* Показываем подменю при hover / focus:
+   учтены варианты, когда has-dropdown стоит на li или когда якорь имеет has-dropdown */
+.main-menu li.has-dropdown:hover > .dropdown-menu,
+.main-menu li:focus-within > .dropdown-menu,
+.main-menu > li > a.has-dropdown:hover + .dropdown-menu {
+  display: flex;
+}
+
+/* Добавляем стрелочку для пунктов с подменю (поддерживает оба варианта) */
+.has-dropdown > a.menu-item::after {
+  content: " ▼";
+  font-size: 0.6rem;
+  margin-left: 6px;
+}
+
+/* Небольшая адаптация для мобильных экранов — чтобы подменю не перекрывало контент */
+@media (max-width: 768px) {
+  .main-menu { flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .menu-item, .main-menu > li > a { padding: 6px 10px; font-size: 0.68rem; }
+  .dropdown-menu { position: static; width: 100%; box-shadow: none; padding: 6px 0; }
+}
+
+/* ======= ПАРАМЕТРЫ ИКОНКИ ======= */
+.param-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 6px; }
+.param-icon { width: 28px; height: 28px; margin-bottom: 2px; }
+.param-value { font-size: 0.8rem; font-weight: bold; color: #ffdd88; text-shadow: 1px 1px 2px #000; }
+.primary-stats { display: flex; justify-content: center; align-items: flex-start; gap: 12px; }
+
+/* ======= СЕКЦИИ (Home) — добавленные/улучшенные стили, цвета как в main.html ======= */
+.section {
+  /* переопределение (более заметное, но в рамках палитры) */
+  background: rgba(0, 20, 60, 0.75);
+  border: 2px solid #b08030;
+  border-radius: 6px;
+  padding: 22px;
+  margin: 22px 0;
+}
+.section-title {
+  font-family: 'Press Start 2P', sans-serif;
+  font-size: 14px;
+  text-align: center;
+  color: #ffdd55;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.section-content { font-size: 13px; line-height: 1.6; color: #e0d0a0; }
+.divider { height: 2px; background: linear-gradient(to right, #e0b050, #ffdd55); margin: 18px 0; border-radius: 1px; opacity: 0.95; }
+
+/* Список преимуществ в стиле main */
+.feature-list { list-style: none; padding-left: 0; margin: 15px 0; }
+.feature-list li {
+  margin: 10px 0;
+  padding: 10px 12px;
+  background: rgba(8, 18, 50, 0.55);
+  border: 1px solid rgba(224,176,80,0.25);
+  border-left: 3px solid rgba(224,176,80,0.6);
+  border-radius: 6px;
+  color: #e8d8b0;
+}
+.feature-list li::before { content: "★ "; color: #ffdd55; font-weight: bold; margin-right: 6px; }
+
+/* ======= CTA-блок и кнопки (как в main.html) ======= */
+.cta-section {
+  text-align: center;
+  padding: 24px;
+  background: rgba(0, 15, 50, 0.85);
+  border: 2px solid #e0b050;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+.cta-title { color: #ffdd55; font-size: 1.05rem; margin-bottom: 12px; font-family: 'Press Start 2P', sans-serif; }
+.button {
+  display: inline-block;
+  background: linear-gradient(to right, #e0b050, #ffdd55);
+  color: #000;
+  padding: 8px 16px;
+  margin: 10px 0;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  text-shadow: 0 0 3px #fff;
+  box-shadow: 0 0 6px rgba(200,150,50,0.25);
+  border: 2px solid #b08030;
+  transition: all 0.18s ease;
+}
+.button:hover { transform: translateY(-3px); box-shadow: 0 0 12px rgba(255,220,120,0.45); }
+
+/* ======= ФУТЕР ======= */
+.footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #805020; color: #a08050; font-size: 0.8rem; }
+
+/* ======= МЕЛКИЕ УТИЛИТЫ (чтобы не рушить верстку) ======= */
+.hidden { display: none !important; }
+.center { text-align: center; }
+.small { font-size: 0.7rem; }
+.loader-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.loader {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #d4af37; /* золотой */
+  border-radius: 50%;
+  width: 50px; height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.dropdown-menu a.active {
+  font-weight: bold;
+  color: #ffcc00; /* или любой твой фирменный цвет */
+}
+.rank-icon {
+  width: 40px;
+  height: 40px;
+  margin-top: 6px;
+  image-rendering: pixelated;
+}
+.rank-icon {
+  width: 60px;
+  height: 60px;
+  margin-top: 6px;
+  image-rendering: pixelated;
+  border: 2px solid #6e4f1a;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.5);
+}
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: rgba(0, 15, 50, 0.3);
+  border: 2px solid #6e4f1a;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+}
+
+.stats-table th, .stats-table td {
+  padding: 8px;
+  border-bottom: 1px solid rgba(255, 220, 100, 0.2);
+  text-align: center;
+  color: #e8e0c0;
+  font-size: 11px;
+}
+
+.stats-table th {
+  background: rgba(20, 20, 40, 0.85);
+  color: #ffdd55;
+  text-shadow: 0 0 5px rgba(255, 220, 100, 0.6);
+  cursor: pointer;
+  user-select: none;
+}
+
+.stats-table th:hover {
+  background: rgba(70, 50, 20, 0.8);
+  color: #fff6b0;
+}
+/* === Таблица по замкам === */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 10px;
+  background: rgba(0, 15, 50, 0.3);
+  border: 2px solid #6e4f1a;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+  table-layout: fixed; /* предотвращает смещение */
+}
+
+.table th, .table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(255, 220, 100, 0.2);
+  color: #e8e0c0;
+  text-align: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.player-name {
+  color: #ffdd55;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px rgba(255, 220, 100, 0.6);
+  display: inline-block;
+  transform: translateY(-1px); /* поднимаем над линией */
+  margin-left: 4px;
+}
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #1e1e1e;
+  padding: 20px 30px;
+  border-radius: 16px;
+  width: 500px;
+  color: #fff;
+  text-align: center;
+}
+
+.close {
+  float: right;
+  cursor: pointer;
+  font-size: 22px;
+}
+
+.castle-grid, .hero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.castle-option, .hero-option {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 5px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.castle-option:hover, .hero-option:hover {
+  border-color: #888;
+}
+
+.castle-option.selected, .hero-option.selected {
+  border-color: #00c3ff;
+  background: rgba(0,195,255,0.15);
+}
+
+.btn {
+  background: #0078ff;
+  color: #fff;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn:hover {
+  background: #005dc7;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.hidden {
+  display: none;
+}
+.modal {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.6);
+  align-items: center; justify-content: center;
+}
+.modal-content { background:#1e1e1e; color:#fff; padding:20px 30px; border-radius:16px; width:520px; text-align:center; }
+.close { float:right; cursor:pointer; font-size:22px; }
+.modal-footer { display:flex; justify-content:space-between; margin-top:20px; }
+.btn { background:#0078ff; color:#fff; border:none; padding:8px 16px; border-radius:10px; }
+.btn:disabled { opacity:.6; cursor:not-allowed; }
+.hidden { display:none; }
+
+.castle-grid, .hero-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(80px,1fr)); gap:10px; margin-top:16px; }
+.castle-option, .hero-option { border:2px solid transparent; border-radius:10px; padding:6px; cursor:pointer; transition:.2s; }
+.castle-option:hover, .hero-option:hover { border-color:#888; }
+.castle-option.selected, .hero-option.selected { border-color:#00c3ff; background: rgba(0,195,255,.15); }
+
+.castle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.castle-option {
+  background: rgba(20, 20, 40, 0.5);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 4px;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: center;
+}
+
+.castle-option img {
+  width: 64px;
+  height: 64px;
+  display: block;
+  margin: 0 auto;
+}
+
+.castle-option:hover {
+  border-color: #ffcc66;
+  background: rgba(255, 220, 100, 0.1);
+}
+
+.castle-option.selected {
+  border-color: #ffcc00;
+  background: rgba(255, 220, 100, 0.2);
+}
+/* === Унификация размеров всех полей === */
+input, select, textarea, .castle-select-display {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 5px;
+  border-radius: 6px;
+  border: 1px solid #805020;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffdd88;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.65rem;
+  height: 42px; /* одинаковая высота для всех */
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* === Кастомный выпадающий список замков === */
+.castle-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.castle-select-display {
+  cursor: pointer;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.castle-select-display img {
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+}
+
+.castle-dropdown {
+  display: none; /* ← критично: по умолчанию скрыто */
+  position: absolute;
+  top: 108%;
+  left: 0;
+  width: 100%;
+  background: rgba(10, 10, 25, 0.97);
+  border: 1px solid #b08030;
+  border-radius: 8px;
+  padding: 6px;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+
+  /* сетка 4x3 для 11 иконок */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.castle-dropdown.show {
+  display: grid; /* ← открываем при клике */
+}
+
+
+.castle-item {
+  background: rgba(30, 30, 50, 0.4);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.castle-item img {
+  width: 36px;   /* уменьшили с 40px */
+  height: 36px;
+  display: block;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.castle-item:hover {
+  border-color: #ffcc66;
+  background: rgba(255, 220, 100, 0.1);
+}
+/* === Убираем стрелки и системные элементы в инпутах и select === */
+
+/* убираем стрелки ↑↓ в числовых полях (Chrome, Edge, Opera) */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* убираем стрелки ↑↓ в Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* убираем стандартную стрелку select во всех браузерах */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none !important;
+  background-color: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+/* Добавляем небольшую иконку стрелочки через псевдоэлемент, в твоем стиле */
+select::after {
+  content: "▼";
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+}
+
+/* фикс для старых Edge и Safari — не показывать границы при hover */
+select:focus,
+input:focus {
+  outline: none;
+  border-color: #ffcc66;
+  box-shadow: 0 0 5px rgba(255, 220, 100, 0.4);
+}
+/* Контейнер выборки героев под полем "Ваш стартер" */
+.hero-dropdown {
+  display: none;
+  margin-top: 8px;
+  background: rgba(10, 10, 25, 0.95);
+  border: 1px solid #b08030;
+  border-radius: 8px;
+  padding: 8px;
+  /* убираем grid, чтобы работала схема 4–3–3 */
+  /* grid-template-columns: repeat(5, 1fr);  <-- удалить */
+  /* display/grid убираем полностью */
+}
+
+.hero-dropdown.visible {
+  display: block; /* было grid — из-за этого ломалась раскладка */
+}
+
+/* Ряд героев (мы уже создаём их в JS) */
+.hero-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* Карточка героя */
+.hero-item {
+  background: rgba(30, 30, 50, 0.4);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 2px;
+  cursor: pointer;
+  transition: 0.2s;
+  text-align: center;
+}
+
+.hero-item img {
+  width: 44px;
+  height: 44px;
+  display: block;
+  margin: 0 auto;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.hero-item:hover {
+  border-color: #ffcc66;
+  background: rgba(255, 220, 100, 0.1);
+}
+
+.hero-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.hero-item img {
+  width: 44px;
+  height: 44px;
+}
+
+.monster-select-wrapper {
+  position: relative;
+}
+
+.monster-select-display {
+  cursor: pointer;
+  background: rgba(20, 20, 40, 0.6);
+  border: 1px solid #b08030;
+  border-radius: 6px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px; /* ← фиксируем такую же высоту, как у select */
+  padding: 0 8px;
+  overflow: hidden;
+  font-size: 0.65rem;
+  margin-top: 5px;
+}
+
+
+.monster-select-display img {
+  width: 48px;       /* уменьшено */
+  height: 42px;      /* уменьшено */
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 3px;
+}
+
+.monster-dropdown {
+  display: none;
+  position: absolute;
+  z-index: 200;
+  background: rgba(10, 10, 30, 0.95);
+  border: 1px solid #b08030;
+  border-radius: 8px;
+  padding: 8px;
+  top: 105%;
+  left: 0;
+  width: 100%;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.monster-dropdown.show {
+  display: grid;
+}
+
+.monster-item img {
+  width: 36px;       /* уменьшены иконки в сетке */
+  height: 36px;
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+}
+
+.monster-item img:hover {
+  transform: scale(1.1);
+}
+
+.monster-select-display.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* === Унификация выбора существ (охран / стеков) === */
+
+.guard-select-wrapper {
+  position: relative;
+}
+
+.guard-select-display {
+  cursor: pointer;
+  background: rgba(20, 20, 40, 0.6);
+  border: 1px solid #b08030;
+  border-radius: 6px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px; /* ← фиксируем такую же высоту, как у select */
+  padding: 0 8px;
+  overflow: hidden;
+  font-size: 0.65rem;
+  margin-top: 5px;
+}
+
+.guard-dropdown {
+  display: none;
+  position: absolute;
+  z-index: 200;
+  background: rgba(10, 10, 30, 0.95);
+  border: 1px solid #b08030;
+  border-radius: 8px;
+  padding: 8px;
+  top: 105%;
+  left: 0;
+  width: 100%;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.guard-dropdown.show {
+  display: grid;
+}
+
+.guard-item img {
+  width: 36px;       /* уменьшены иконки в сетке */
+  height: 36px;
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+}
+
+.guard-item img:hover {
+  transform: scale(1.1);
+}
+
+/* Конец файла */

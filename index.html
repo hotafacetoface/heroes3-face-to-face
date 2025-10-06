@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Лицом к лицу 1.08 База данных героев</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- DataTables (JS + CSS) -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+</head>
+<body>
+  <!-- Подключаем меню -->
+<!-- Подключаем меню -->
+<div id="menu-placeholder"></div>
+    <div class="loader-container" id="loader">
+  <div class="loader-box">
+    <div class="loader-header">Загрузка данных</div>
+    <div class="loader-bar">
+      <div class="loader-fill" id="loader-fill"></div>
+    </div>
+    <div class="loader-text" id="loader-text">0%</div>
+  </div>
+</div>
+      <div class="table-responsive">
+        <table id="heroes-table" class="table">
+          <!-- FIXED COLUMN WIDTHS: colgroup гарантирует, что заголовки и ячейки будут совпадать -->
+		<colgroup>
+		  <col style="width:35px;">
+		  <col style="width:70px;">
+		  <col style="width:70px;">
+		  <col style="width:70px;">
+		  <col style="width:90px;">   <!-- навыки -->
+		  <col style="width:60px;">   <!-- арт -->
+		  <col style="width:180px;">  <!-- параметры -->
+		</colgroup>
+
+
+			<thead>
+			  <tr>
+				<th><div class="column-header"><div class="column-title">Замок</div></div></th>
+				<th><div class="column-header"><div class="column-title">Герой</div></div></th>
+				<th><div class="column-header"><div class="column-title">Спец-я</div></div></th>
+				<th><div class="column-header"><div class="column-title">Закл-е</div></div></th>
+				<th class="skills-column"><div class="column-header"><div class="column-title">Навыки</div></div></th>
+				<th class="art-column"><div class="column-header"><div class="column-title">Арт</div></div></th>
+				<th><div class="column-header"><div class="column-title">Параметры</div></div></th>
+			  </tr>
+			</thead>
+          <tbody>
+            <!-- Данные загрузятся здесь -->
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="debug-info" id="debug-info"></div>
+
+<!-- JS справочники -->
+<script src="js/icons-castles.js"></script>
+<script src="js/icons-heroes.js"></script>
+<script src="js/icons-specializations.js"></script>
+<script src="js/icons-skills.js"></script>
+
+<!-- основной скрипт -->
+<script src="js/main.js"></script>
+
+<!-- Подгрузка меню и запуск логики -->
+<script>
+fetch("menu.html")
+  .then(r => r.text())
+  .then(d => {
+    const menuContainer = document.getElementById("menu-placeholder");
+    menuContainer.innerHTML = d;
+
+    // Инициализация меню
+    if (typeof initMenu === "function") initMenu();
+
+    // Если есть таблица героев — запускаем
+    if (typeof initHeroesTable === "function") initHeroesTable();
+  })
+  .catch(err => console.error("Ошибка загрузки меню:", err));
+</script>
+</body>
+</html>

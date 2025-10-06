@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Опубликовать матч — Лицом к лицу</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <style>
+    body { background: url('https://iili.io/KGogCiP.gif') no-repeat center center fixed; background-size: cover; }
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+      color: #ffdd55;
+      font-size: 0.9rem;
+      text-shadow: 1px 1px 2px #000;
+    }
+    form {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: rgba(0,15,50,0.6);
+      border: 2px solid #6e4f1a;
+      border-radius: 8px;
+      padding: 20px 25px;
+      color: #e0d0a0;
+    }
+    fieldset {
+      border: 1px solid #b08030;
+      border-radius: 6px;
+      margin-bottom: 18px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.25);
+    }
+    legend {
+      padding: 0 8px;
+      color: #ffdd55;
+      text-shadow: 1px 1px 2px #000;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 0.7rem;
+      color: #e0d0a0;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 6px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #805020;
+      background: rgba(0, 0, 0, 0.5);
+      color: #ffdd88;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 0.65rem;
+    }
+    .row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* ровно 3 колонки */
+  gap: 15px;
+}
+    button {
+      background: linear-gradient(to right, #e0b050, #ffdd55);
+      color: #000;
+      font-weight: bold;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-top: 15px;
+      width: 100%;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 0 10px rgba(255, 220, 100, 0.6); }
+  </style>
+</head>
+<body>
+
+<div id="menu-placeholder"></div>
+
+<h1>🗡️ Опубликовать матч</h1>
+
+<form id="matchForm">
+
+  <!-- Технические поля -->
+  <fieldset style="display:none;">
+    <legend>Системные данные</legend>
+    <div class="row">
+      <div>
+        <label>Патч (автоматически)</label>
+        <input type="text" id="patch" name="patch" readonly>
+      </div>
+      <div>
+        <label>Дата (автоматически)</label>
+        <input type="text" id="date" name="date" readonly>
+      </div>
+      <div>
+        <label>Ник игрока</label>
+        <input type="text" id="playerNick" name="playerNick" readonly>
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- Основные поля -->
+  <fieldset>
+    <legend>Основная информация</legend>
+    <div class="row">
+      <div>
+        <label>Разница золота</label>
+        <input type="number" name="goldDiff" min="-10000" max="10000" value="0" required>
+      </div>
+      <div>
+        <label>Цвет</label>
+        <select name="color" required>
+          <option value="">Выберите...</option>
+          <option value="Красный">🟥 Красный</option>
+          <option value="Синий">🟦 Синий</option>
+        </select>
+      </div>
+      <div>
+        <label>Исход</label>
+        <select name="result" required>
+          <option value="">Выберите...</option>
+          <option value="Победа">🏆 Победа</option>
+          <option value="Поражение">💀 Поражение</option>
+        </select>
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- Замки и герои -->
+  <fieldset>
+    <legend>Замки и герои</legend>
+    <div class="row">
+<div>
+  <label>Ваш замок</label>
+  <div class="castle-select-wrapper">
+    <div class="castle-select-display" id="castleDisplay" title="Выберите замок">Выберите замок...</div>
+    <input type="hidden" name="castle" id="castleInput" required>
+    <div class="castle-dropdown" id="castleDropdown"></div>
+  </div>
+</div>
+
+<div>
+  <label>Замок противника</label>
+  <div class="castle-select-wrapper">
+    <div class="castle-select-display" id="enemyCastleDisplay" title="Выберите замок противника">Выберите замок...</div>
+    <input type="hidden" name="enemyCastle" id="enemyCastleInput" required>
+    <div class="castle-dropdown" id="enemyCastleDropdown"></div>
+  </div>
+</div>
+
+<div>
+  <label>Ник противника</label>
+  <input type="text" name="enemyNick" placeholder="Введите ник" required>
+</div>
+
+<div>
+  <label>Ваш основной герой</label>
+  <input type="text" name="starter" placeholder="Имя героя" required>
+</div>
+
+<div>
+  <label>Основной герой противника</label>
+  <input type="text" name="enemyStarter" placeholder="Имя героя" required>
+</div>
+
+<div>
+  <label>Оцените матч</label>
+  <select name="reputation" required>
+    <option value="">Выберите...</option>
+    <option value="5">⭐ Отлично</option>
+    <option value="4">👍 Хорошо</option>
+    <option value="3">😐 Средне</option>
+    <option value="2">👎 Плохо</option>
+    <option value="1">💀 Ужасно</option>
+  </select>
+</div>
+
+    </div>
+  </fieldset>
+<script src="js/icons-castles.js"></script>
+<script src="js/icons-heroes.js"></script>
+<script src="js/heroes-by-castle.js"></script>
+<script src="js/icons-monsters.js"></script>
+<script src="js/icons-guards.js"></script>
+
+  <!-- Дополнительные данные -->
+<fieldset>
+  <legend>Дополнительная информация</legend>
+  <div class="row">
+
+    <!-- Начальный бонус игрока -->
+    <div>
+      <label>Начальный бонус игрока</label>
+      <select name="bonusPlayer" required>
+        <option value="">Выберите...</option>
+        <option value="Случайно">🎲 Случайно</option>
+        <option value="Артефакт">🗡️ Артефакт</option>
+        <option value="Ресурсы">💎 Ресурсы</option>
+        <option value="Золото">💰 Золото</option>
+      </select>
+    </div>
+
+    <!-- Начальный бонус оппонента -->
+    <div>
+      <label>Начальный бонус оппонента</label>
+      <select name="bonusEnemy" required>
+        <option value="">Выберите...</option>
+        <option value="Случайно">🎲 Случайно</option>
+        <option value="Артефакт">🗡️ Артефакт</option>
+        <option value="Ресурсы">💎 Ресурсы</option>
+        <option value="Золото">💰 Золото</option>
+      </select>
+    </div>
+
+    <!-- Финальный бой -->
+    <div>
+      <label>Состоялся ли финальный бой?</label>
+      <select name="finalBattle" id="finalBattle" required>
+        <option value="">Выберите...</option>
+        <option value="Да">Да</option>
+        <option value="Нет">Нет</option>
+      </select>
+    </div>
+
+    <!-- Где происходил бой -->
+    <div>
+      <label>Где происходил бой?</label>
+      <select name="battlePlace" id="battlePlace" required disabled>
+        <option value="">Выберите...</option>
+        <option value="Союзная территория">Союзная территория</option>
+        <option value="Центр">Центр</option>
+        <option value="Вражеская территория">Вражеская территория</option>
+      </select>
+    </div>
+
+    <!-- Осада -->
+    <div>
+      <label>Осада?</label>
+      <select name="siege" id="siege" required disabled>
+        <option value="">Выберите...</option>
+        <option value="Да">Да</option>
+        <option value="Нет">Нет</option>
+      </select>
+    </div>
+
+    <!-- Сильнейший стек игрока -->
+    <div>
+      <label>Сильнейший стек игрока</label>
+      <div class="monster-select-wrapper">
+        <div class="monster-select-display" id="playerMonsterDisplay" title="Выберите существо">Выберите существо...</div>
+        <input type="hidden" name="mainStack" id="playerMonsterInput" required>
+        <div class="monster-dropdown" id="playerMonsterDropdown"></div>
+      </div>
+    </div>
+
+    <!-- Сильнейший стек противника -->
+    <div>
+      <label>Сильнейший стек противника</label>
+      <div class="monster-select-wrapper">
+        <div class="monster-select-display" id="enemyMonsterDisplay" title="Выберите существо">Выберите существо...</div>
+        <input type="hidden" name="enemyStack" id="enemyMonsterInput" required>
+        <div class="monster-dropdown" id="enemyMonsterDropdown"></div>
+      </div>
+    </div>
+
+  </div>
+</fieldset>
+
+
+  <fieldset>
+    <legend>Прогресс и экономика</legend>
+    <div class="row">
+      <div><label>Взят второй замок?</label><select name="secondCastle"><option></option><option>Да</option><option>Нет</option></select></div>
+      <div><label>Когда взят второй замок?</label><input type="text" name="secondCastleDate"></div>
+      <div><label>Охрана в центре?</label><input type="text" name="centerGuard"></div>
+      <div><label>Удалось выйти в центр?</label><select name="centerEnter"><option></option><option>Да</option><option>Нет</option></select></div>
+      <div><label>Когда вышел в центр?</label><input type="text" name="centerDate"></div>
+      <div><label>Пробил ли охрану на территорию врага?</label><select name="enemyZone"><option></option><option>Да</option><option>Нет</option></select></div>
+      <div><label>Кто был у врага на охране?</label><input type="text" name="enemyGuard"></div>
+      <div><label>Конец игры</label><input type="text" name="gameEnd"></div>
+      <div>
+  <label>Уровень экономики</label>
+  <select name="ecoLevel" required>
+    <option value="">Выберите...</option>
+    <option value="Управа">🏠 Управа</option>
+    <option value="Префектура">🏛️ Префектура</option>
+    <option value="Муниципалитет">🏢 Муниципалитет</option>
+    <option value="Капитолий">🏦 Капитолий</option>
+  </select>
+</div>
+
+<div>
+  <label>Уровень ГМ</label>
+  <select name="gmLevel" required>
+    <option value="">Выберите...</option>
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+  </select>
+</div>
+
+    </div>
+  </fieldset>
+
+  <button type="submit">📤 Отправить заявку</button>
+</form>
+<script>
+// Автозаполнение системных полей
+document.addEventListener("DOMContentLoaded", () => {
+  const patch = document.getElementById("patch");
+  const date = document.getElementById("date");
+  const playerNick = document.getElementById("playerNick");
+
+  patch.value = "1.08"; // или можно потом заменить fetch из Google Sheets
+  date.value = new Date().toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  playerNick.value = localStorage.getItem("authUser") || "Неавторизован";
+});
+
+// Заглушка на отправку
+document.getElementById("matchForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  // === Отправка данных в Google Sheets ===
+document.getElementById("matchForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const form = e.target;
+  const formData = new FormData(form);
+  const json = Object.fromEntries(formData.entries());
+
+  try {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbx1wNCYhFSWfmeHbNhla7-xPzy2QGTLjtqc1aaZQZxNijg3Oe_Qq-yY_DPSBDVqtlsrNA/exec", {
+      method: "POST",
+      body: JSON.stringify(json),
+      headers: { "Content-Type": "application/json" }
+    });
+
+    const result = await response.json();
+    if (result.result === "success") {
+      alert("✅ Заявка успешно отправлена!");
+      form.reset();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      alert("⚠️ Ошибка при отправке!");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("❌ Не удалось отправить заявку. Проверь подключение.");
+  }
+});
+
+});
+</script>
+
+<!-- Подгрузка меню -->
+<script>
+fetch("menu.html")
+  .then(r => r.text())
+  .then(d => {
+    document.getElementById("menu-placeholder").innerHTML = d;
+    if (typeof initMenu === "function") initMenu();
+  })
+  .catch(err => console.error("Ошибка загрузки меню:", err));
+  // Ограничение диапазона "Разница золота" при вводе
+const goldDiffInput = document.querySelector('input[name="goldDiff"]');
+if (goldDiffInput) {
+  goldDiffInput.addEventListener("input", () => {
+    let value = parseInt(goldDiffInput.value, 10);
+    if (isNaN(value)) return;
+    if (value > 10000) value = 10000;
+    if (value < -10000) value = -10000;
+    goldDiffInput.value = value;
+  });
+}
+
+// === Список замков ===
+// === Список замков из icons-castles.js ===
+// Новый порядок замков:
+const castleOrder = [
+  "Замок",
+  "Оплот",
+  "Башня",
+  "Инферно",
+  "Некрополис",
+  "Темница",
+  "Цитадель",
+  "Крепость",
+  "Сопряжение",
+  "Причал",
+  "Фабрика"
+];
+
+const castles = castleOrder.map(name => ({
+  id: name.toLowerCase(),
+  name,
+  icon: castleIcons[name]
+}));
+
+const dropdown = document.getElementById('castleDropdown');
+const display = document.getElementById('castleDisplay');
+const input = document.getElementById('castleInput');
+let selectedCastle = null; // текущий выбранный замок игрока
+window.selectedCastle = null;
+// отрисовка иконок
+dropdown.innerHTML = castles.map(c => `
+  <div class="castle-item" data-id="${c.id}" title="${c.name}">
+    <img src="${c.icon}" alt="${c.name}">
+  </div>
+`).join('');
+
+// открытие / закрытие выпадающего списка по клику
+display.addEventListener('click', (e) => {
+  e.stopPropagation();
+
+  // если клик по открытому списку — просто свернуть
+  if (dropdown.classList.contains('show')) {
+    dropdown.classList.remove('show');
+  } else {
+    // закрыть все остальные dropdown'ы на странице (если появятся позже)
+    document.querySelectorAll('.castle-dropdown.show').forEach(el => el.classList.remove('show'));
+    dropdown.classList.add('show');
+  }
+});
+
+
+// закрытие при клике вне области
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.castle-select-wrapper')) {
+    dropdown.classList.remove('show');
+  }
+});
+// === ВЫБОР ЗАМКА И ГЕРОЯ ПРОТИВНИКА + ИГРОКА (консолидация) ===
+
+// ------ Поле "Ваш основной герой" (игрок) ------
+const starterField = document.querySelector('input[name="starter"]');
+const heroContainer = document.createElement("div");
+heroContainer.classList.add("hero-dropdown");
+starterField.insertAdjacentElement("afterend", heroContainer);
+
+// Показ героев 4–3–3 по замку
+function showHeroesForCastle(castleName, containerEl) {
+  const heroes = heroesByCastle[castleName];
+  if (!heroes) return;
+  const layout = [4, 3, 3];
+
+  let html = "", i = 0;
+  layout.forEach(n => {
+    html += `<div class="hero-row">`;
+    for (let k = 0; k < n && i < heroes.length; k++) {
+      const h = heroes[i++];
+      html += `
+        <div class="hero-item" title="${h}" data-hero="${h}">
+          <img src="${heroIcons[h] || 'https://via.placeholder.com/40'}" alt="${h}">
+        </div>`;
+    }
+    html += `</div>`;
+  });
+  containerEl.innerHTML = html;
+}
+
+// ------ Выбор замка игрока (единый обработчик) ------
+dropdown.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const item = e.target.closest('.castle-item');
+  if (!item) return;
+
+  const castle = castles.find(c => c.id === item.dataset.id);
+  if (!castle) return;
+
+  input.value = castle.name;
+  display.innerHTML = `<img src="${castle.icon}" alt="${castle.name}"> ${castle.name}`;
+  dropdown.classList.remove('show');
+
+  selectedCastle = castle.name;
+  window.selectedCastle = castle.name;  // ✅ запоминаем выбор игрока
+  heroContainer.classList.remove("visible");
+  starterField.value = "";
+
+});
+
+
+// ------ Клик по "Ваш основной герой" ------
+starterField.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (!selectedCastle) {
+    alert("Сначала выбери свой замок!");
+    return;
+  }
+  if (heroContainer.classList.contains("visible")) {
+    heroContainer.classList.remove("visible");
+  } else {
+    showHeroesForCastle(selectedCastle, heroContainer);
+    heroContainer.classList.add("visible");
+  }
+});
+
+// Выбор героя игрока
+heroContainer.addEventListener("click", (e) => {
+  const heroDiv = e.target.closest(".hero-item");
+  if (!heroDiv) return;
+  starterField.value = heroDiv.dataset.hero;
+  heroContainer.classList.remove("visible");
+});
+
+// Закрытие выпадашек по клику вне
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".hero-dropdown") && !e.target.closest('input[name="starter"]')) {
+    heroContainer.classList.remove("visible");
+  }
+});
+// === КАСТОМНЫЙ ВЫБОР ЗАМКА ПРОТИВНИКА ===
+const enemyDropdown = document.getElementById('enemyCastleDropdown');
+const enemyDisplay = document.getElementById('enemyCastleDisplay');
+const enemyInput = document.getElementById('enemyCastleInput');
+let enemySelectedCastle = null; // теперь всегда актуальное значение
+
+// функция для отрисовки списка замков противника
+function renderEnemyCastles() {
+  enemyDropdown.innerHTML = castles
+    .filter(c => c.name !== selectedCastle) // исключаем замок игрока
+    .map(c => `
+      <div class="castle-item" data-id="${c.id}" title="${c.name}">
+        <img src="${c.icon}" alt="${c.name}">
+      </div>
+    `).join('');
+}
+
+// при клике по полю "замок противника" — открываем/закрываем список
+enemyDisplay.addEventListener('click', (e) => {
+  e.stopPropagation();
+
+  // если список уже открыт — закрыть
+  if (enemyDropdown.classList.contains('show')) {
+    enemyDropdown.classList.remove('show');
+  } else {
+    renderEnemyCastles(); // отрисовать с учётом текущего выбора игрока
+    document.querySelectorAll('.castle-dropdown.show').forEach(el => el.classList.remove('show'));
+    enemyDropdown.classList.add('show');
+  }
+});
+
+// выбор замка противника
+enemyDropdown.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const item = e.target.closest('.castle-item');
+  if (!item) return;
+
+  const castle = castles.find(c => c.id === item.dataset.id);
+  if (!castle) return;
+
+  enemyInput.value = castle.name;
+  enemyDisplay.innerHTML = `<img src="${castle.icon}" alt="${castle.name}"> ${castle.name}`;
+  enemyDropdown.classList.remove('show');
+
+  enemySelectedCastle = castle.name;
+  window.enemySelectedCastle = castle.name;
+  enemyHeroContainer.classList.remove("visible");
+  enemyStarterField.value = "";
+});
+// === ВЫБОР ГЕРОЯ ПРОТИВНИКА ===
+const enemyStarterField = document.querySelector('input[name="enemyStarter"]');
+const enemyHeroContainer = document.createElement("div");
+enemyHeroContainer.classList.add("hero-dropdown");
+enemyStarterField.insertAdjacentElement("afterend", enemyHeroContainer);
+
+// обработчик клика по полю "Основной герой противника"
+enemyStarterField.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (!enemySelectedCastle) {
+    alert("Сначала выбери замок противника!");
+    return;
+  }
+  if (enemyHeroContainer.classList.contains("visible")) {
+    enemyHeroContainer.classList.remove("visible");
+  } else {
+    showHeroesForCastle(enemySelectedCastle, enemyHeroContainer);
+    enemyHeroContainer.classList.add("visible");
+  }
+});
+
+// выбор героя
+enemyHeroContainer.addEventListener("click", (e) => {
+  const heroDiv = e.target.closest(".hero-item");
+  if (!heroDiv) return;
+  enemyStarterField.value = heroDiv.dataset.hero;
+  enemyHeroContainer.classList.remove("visible");
+});
+
+// закрытие при клике вне области
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".hero-dropdown") && !e.target.closest('input[name="enemyStarter"]')) {
+    enemyHeroContainer.classList.remove("visible");
+  }
+});
+
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const finalBattleSelect  = document.getElementById('finalBattle');
+  const battlePlaceSelect  = document.getElementById('battlePlace');
+  const siegeSelect        = document.getElementById('siege');
+
+  const playerMonsterDisplay  = document.getElementById('playerMonsterDisplay');
+  const playerMonsterDropdown = document.getElementById('playerMonsterDropdown');
+  const playerMonsterInput    = document.getElementById('playerMonsterInput');
+
+  const enemyMonsterDisplay   = document.getElementById('enemyMonsterDisplay');
+  const enemyMonsterDropdown  = document.getElementById('enemyMonsterDropdown');
+  const enemyMonsterInput     = document.getElementById('enemyMonsterInput');
+
+  // --- Зависимости финального боя / места / осады
+  function applyFinalDeps() {
+    const isFinal = finalBattleSelect.value === 'Да';
+    const place   = battlePlaceSelect.value;
+
+    // блокировка полей
+    battlePlaceSelect.disabled = !isFinal;
+    siegeSelect.disabled = !isFinal || place === 'Центр';
+
+    // сброс, если бой не финальный
+    if (!isFinal) {
+      battlePlaceSelect.value = '';
+      siegeSelect.value = '';
+      enemyMonsterDisplay.classList.add('disabled');
+      enemyMonsterDropdown.classList.remove('show');
+      enemyMonsterInput.value = '';
+      enemyMonsterDisplay.textContent = 'Выберите существо...';
+    } else {
+      enemyMonsterDisplay.classList.remove('disabled');
+    }
+
+    // сброс осады, если бой = Центр
+    if (place === 'Центр') {
+      siegeSelect.value = 'Нет';
+      siegeSelect.disabled = true;
+    }
+  }
+
+  finalBattleSelect.addEventListener('change', applyFinalDeps);
+  battlePlaceSelect.addEventListener('change', applyFinalDeps);
+  applyFinalDeps();
+
+  // --- Рендер существ по замку
+  function renderMonstersByTown(town, dropdownEl) {
+    if (!town) return;
+    const list = Object.entries(monsterIcons)
+    .filter(([_, d]) => d.town.trim().toLowerCase() === town.trim().toLowerCase());
+    dropdownEl.innerHTML = list.map(([name, d]) => `
+      <div class="monster-item" data-name="${name}" title="${name}">
+        <img src="${d.icon}" alt="${name}">
+      </div>`).join('');
+    dropdownEl.classList.add('show');
+  }
+
+  // --- Игрок
+  playerMonsterDisplay.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!window.selectedCastle) {
+      alert('Сначала выберите свой замок!');
+      return;
+    }
+    renderMonstersByTown(window.selectedCastle, playerMonsterDropdown);
+  });
+
+  playerMonsterDropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const item = e.target.closest('.monster-item');
+    if (!item) return;
+    const name = item.dataset.name;
+    playerMonsterInput.value = name;
+    playerMonsterDisplay.innerHTML = `<img src="${monsterIcons[name].icon}" alt="${name}"> ${name}`;
+    playerMonsterDropdown.classList.remove('show');
+  });
+
+  // --- Противник
+  enemyMonsterDisplay.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (finalBattleSelect.value !== 'Да') {
+      alert('Выбор недоступен: финальный бой не состоялся');
+      return;
+    }
+    if (!window.enemySelectedCastle) {
+      alert('Сначала выберите замок противника!');
+      return;
+    }
+    renderMonstersByTown(window.enemySelectedCastle, enemyMonsterDropdown);
+  });
+
+  enemyMonsterDropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const item = e.target.closest('.monster-item');
+    if (!item) return;
+    const name = item.dataset.name;
+    enemyMonsterInput.value = name;
+    enemyMonsterDisplay.innerHTML = `<img src="${monsterIcons[name].icon}" alt="${name}"> ${name}`;
+    enemyMonsterDropdown.classList.remove('show');
+  });
+
+  // --- Закрытие всех выпадашек по клику вне
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.monster-select-wrapper')) {
+      document.querySelectorAll('.monster-dropdown').forEach(el => el.classList.remove('show'));
+    }
+  });
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // === Поле "Взят второй замок?" ===
+  const secondCastle = document.querySelector('select[name="secondCastle"]');
+  const secondCastleDate = document.querySelector('input[name="secondCastleDate"]');
+  secondCastleDate.disabled = true;
+
+  secondCastle.addEventListener("change", () => {
+    if (secondCastle.value === "Да") {
+      secondCastleDate.disabled = false;
+    } else {
+      secondCastleDate.value = "";
+      secondCastleDate.disabled = true;
+    }
+  });
+
+  // Маска проверки "МНД"
+function validateDateInput(input) {
+  input.addEventListener("input", () => {
+    // Разрешаем только цифры и максимум 3 символа
+    let val = input.value.replace(/\D/g, "").slice(0, 3);
+    let result = "";
+
+    // Проходим по каждой цифре и проверяем корректность
+    for (let i = 0; i < val.length; i++) {
+      const digit = parseInt(val[i], 10);
+      if (digit === 0) continue; // запрет нулей
+
+      if (i === 0 && digit <= 6) result += digit; // месяц
+      if (i === 1 && digit <= 4) result += digit; // неделя
+      if (i === 2 && digit <= 7) result += digit; // день
+    }
+
+    // Записываем обратно только допустимые цифры
+    input.value = result;
+
+    // Если пользователь ввёл 3 цифры — визуальный формат
+    if (result.length === 3) {
+      const [m, w, d] = result.split("");
+      input.title = `${m} месяц ${w} неделя ${d} день`;
+    } else {
+      input.title = "";
+    }
+  });
+}
+
+
+  validateDateInput(secondCastleDate);
+
+  // === Поле "Удалось выйти в центр?" ===
+  const centerEnter = document.querySelector('select[name="centerEnter"]');
+  const centerDate = document.querySelector('input[name="centerDate"]');
+  centerDate.disabled = true;
+
+  centerEnter.addEventListener("change", () => {
+    if (centerEnter.value === "Да") {
+      centerDate.disabled = false;
+    } else {
+      centerDate.value = "";
+      centerDate.disabled = true;
+    }
+  });
+  validateDateInput(centerDate);
+
+  // === "Охрана в центре" ===
+const centerGuardWrapper = document.createElement("div");
+centerGuardWrapper.className = "guard-select-wrapper";
+const centerGuardDisplay = document.createElement("div");
+centerGuardDisplay.className = "guard-select-display";
+centerGuardDisplay.textContent = "Выберите существо...";
+const centerDropdown = document.createElement("div");
+centerDropdown.className = "guard-dropdown";
+centerGuardWrapper.append(centerGuardDisplay, centerDropdown);
+
+const centerGuardInput = document.querySelector('input[name="centerGuard"]');
+centerGuardInput.replaceWith(centerGuardWrapper);
+
+centerGuardDisplay.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const list = Object.entries(window.guardIcons);
+  centerDropdown.innerHTML = list.map(([name, d]) => `
+    <div class="guard-item" data-name="${name}" title="${name}">
+      <img src="${d.icon}" alt="${name}">
+    </div>`).join('');
+  centerDropdown.classList.add("show");
+});
+
+centerDropdown.addEventListener("click", (e) => {
+  const item = e.target.closest(".guard-item");
+  if (!item) return;
+  const name = item.dataset.name;
+  centerGuardDisplay.innerHTML = `<img src="${guardIcons[name].icon}" alt="${name}"> ${name}`;
+  centerDropdown.classList.remove("show");
+});
+
+// === "Кто был у врага на охране?" ===
+const enemyGuardWrapper = document.createElement("div");
+enemyGuardWrapper.className = "guard-select-wrapper";
+const enemyGuardDisplay = document.createElement("div");
+enemyGuardDisplay.className = "guard-select-display";
+enemyGuardDisplay.textContent = "Выберите существо...";
+const enemyDropdown = document.createElement("div");
+enemyDropdown.className = "guard-dropdown";
+enemyGuardWrapper.append(enemyGuardDisplay, enemyDropdown);
+
+const enemyGuardInput = document.querySelector('input[name="enemyGuard"]');
+enemyGuardInput.replaceWith(enemyGuardWrapper);
+
+enemyGuardDisplay.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const list = Object.entries(window.guardIcons);
+  enemyDropdown.innerHTML = list.map(([name, d]) => `
+    <div class="guard-item" data-name="${name}" title="${name}">
+      <img src="${d.icon}" alt="${name}">
+    </div>`).join('');
+  enemyDropdown.classList.add("show");
+});
+
+enemyDropdown.addEventListener("click", (e) => {
+  const item = e.target.closest(".guard-item");
+  if (!item) return;
+  const name = item.dataset.name;
+  enemyGuardDisplay.innerHTML = `<img src="${guardIcons[name].icon}" alt="${name}"> ${name}`;
+  enemyDropdown.classList.remove("show");
+});
+
+// Закрытие всех выпадашек по клику вне
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".guard-select-wrapper")) {
+    document.querySelectorAll(".guard-dropdown").forEach(el => el.classList.remove("show"));
+  }
+});
+
+
+  // === Поле "Конец игры" ===
+  const gameEnd = document.querySelector('input[name="gameEnd"]');
+  validateDateInput(gameEnd);
+});
+</script>
+
+
+</body>
+</html>

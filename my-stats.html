@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Моя статистика — Лицом к лицу</title>
+
+  <!-- Стили и шрифт -->
+  <link rel="stylesheet" href="css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+<!-- ✅ Справочник замков -->
+  <script src="js/icons-castles.js"></script>
+ <!-- ✅ Справочник иконок героев -->
+<script src="js/icons-heroes.js"></script>
+<!-- ✅ Справочник иконок монстров -->
+<script src="js/icons-monsters.js"></script>
+<!-- ✅ Графики -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- ✅ Подключаем main.js -->
+<script src="js/main.js" defer></script>
+</head>
+<body>
+  <!-- Меню -->
+  <div id="menu-placeholder"></div>
+  <script>
+    fetch("menu.html")
+      .then(r => r.text())
+      .then(d => {
+        document.getElementById("menu-placeholder").innerHTML = d;
+        // ✅ после вставки меню вызываем initMenu (реализована в общем JS)
+        if (typeof initMenu === "function") initMenu();
+      })
+      .catch(err => console.error("Ошибка загрузки меню:", err));
+  </script>
+
+  <!-- Основной контейнер -->
+  <div class="container">
+    <h1 class="page-title">МОЯ СТАТИСТИКА</h1>
+
+    <div class="stats-wrapper">
+      <!-- ✅ Левая панель: ник, иконка, Эло и Ранг -->
+      <div id="player-info" class="player-info">
+        <div id="player-name" class="player-name"></div>
+
+        <div class="hero-frame" id="hero-frame">
+          <img id="hero-image" alt="Герой" />
+        </div>
+
+        <div class="player-elo" id="player-elo"></div>
+        <div class="player-rank" id="player-rank"></div>
+      </div>
+
+      <!-- Правая панель: общая статистика -->
+      <div id="stats-container" class="stats-section"></div>
+    </div>
+  </div>
+
+  <!-- Лоадер -->
+  <div id="loader" class="loader-overlay" style="display: none;">
+    <div class="loader"></div>
+  </div>
+<!-- Лоадер для вкладок (например, "Замки") -->
+<div id="tab-loader" class="loader-overlay" style="display: none;">
+  <div class="loader"></div>
+</div>
+  <script>
+    const authUser = localStorage.getItem("authUser");
+    if (!authUser) window.location.href = "login.html";
+
+    async function fetchUserStats(username) {
+      const url = "https://script.google.com/macros/s/AKfycbyFBd0h8ErXgmA16lByhsvOgVAJ-7zFkspg1t8TuK1hS0AVr4ACizgINDNR7thG4gcgag/exec?username=" + encodeURIComponent(username);
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    /* ✅ Аккуратный резолвер иконки героя:
+       - чистим имя (trim, убираем звездочки)
+       - ищем точное и безрегистровое совпадение
+       - если не нашли — показываем встроенный placeholder (SVG), чтобы не было «битой» картинки */
+  function resolveHeroIcon(heroName) {
+    if (!heroName) return null;
+
+    // исключаем "НЗ", "-", "—"
+    if (/^(нз|nz|—|-)$/i.test(heroName)) return null;
+
+    const clean = String(heroName).replace(/\*/g, "").trim();
+
+    // гарантируем доступ к глобальному словарю
+    const dict = window.heroIcons || {};
+
+    // точное совпадение
+    if (dict[clean]) return dict[clean];
+
+    // безрегистровое совпадение
+    const key = Object.keys(dict).find(k => k.toLowerCase() === clean.toLowerCase());
+    return key ? dict[key] : null;
+  }
+
+
+    // Встроенный безопасный placeholder (SVG), если иконку не нашли
+    const HERO_PLACEHOLDER =
+      'data:image/svg+xml;utf8,' +
+      encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">
+        <rect width="100%" height="100%" fill="#0d1b2a"/>
+        <rect x="6" y="6" width="148" height="148" fill="none" stroke="#6e4f1a" stroke-width="6"/>
+        <circle cx="80" cy="60" r="28" fill="#1b263b"/>
+        <rect x="40" y="96" width="80" height="40" rx="10" fill="#1b263b"/>
+        <text x="50%" y="152" fill="#ffd700" font-size="16" font-family="monospace" text-anchor="middle">H3</text>
+      </svg>`);
+const ranks = [
+  { name: "Крестьянин",   icon: "крестьяне", min: 0, max: 499 },
+  { name: "Вор",          icon: "воры", min: 500, max: 749 },
+  { name: "Наездник на кабане", icon: "наездники на кабанах", min: 750, max: 999 },
+  { name: "Лепрекон",     icon: "лепреконы", min: 1000, max: 1099 },
+  { name: "Мумия",        icon: "мумии", min: 1100, max: 1199 },
+  { name: "Кочевник",     icon: "кочевник", min: 1200, max: 1299 },
+  { name: "Сатир",        icon: "сатиры", min: 1300, max: 1399 },
+  { name: "Снайпер",      icon: "снайперы", min: 1400, max: 1499 },
+  { name: "Стальной голем", icon: "стальные големы", min: 1500, max: 1599 },
+  { name: "Золотой голем",  icon: "золотые големы", min: 1600, max: 1699 },
+  { name: "Фангарм",        icon: "фангармы", min: 1700, max: 1799 },
+  { name: "Тролль",         icon: "тролли", min: 1800, max: 1899 },
+  { name: "Алмазный голем", icon: "алмазные големы", min: 1900, max: 1999 },
+  { name: "Колдун",         icon: "колдуны", min: 2000, max: 2049 },
+  { name: "Сказочный дракон", icon: "сказочный дракон", min: 2050, max: 2099 },
+  { name: "Ржавый дракон",   icon: "ржавый дракон", min: 2100, max: 2149 },
+  { name: "Кристальный дракон", icon: "кристальный дракон", min: 2150, max: 2199 },
+  { name: "Лазурный дракон", icon: "лазурный дракон", min: 2200, max: 9999 }
+];
+function getPlayerRank(elo, totalGames) {
+  if (totalGames < 10) {
+    return { name: "На калибровке", icon: null };
+  }
+  for (const rank of ranks) {
+    if (elo >= rank.min && elo <= rank.max) {
+      const iconUrl = window.monsterIcons?.[rank.icon]?.icon || null;
+      return { name: rank.name, icon: iconUrl };
+    }
+  }
+  return { name: "Без ранга", icon: null };
+}
+
+    async function initMyStats() {
+      const loader = document.getElementById("loader");
+      const container = document.getElementById("stats-container");
+
+      const playerName = document.getElementById("player-name");
+      const heroImg    = document.getElementById("hero-image");
+      const heroFrame  = document.getElementById("hero-frame");
+      const playerElo  = document.getElementById("player-elo");
+      const playerRank = document.getElementById("player-rank");
+
+      loader.style.display = "flex";
+
+      try {
+        const stats = await fetchUserStats(authUser);
+                // Левая панель
+        playerName.textContent = stats.username || authUser;
+        playerElo.innerHTML = `Эло: <span style="color:#ffd700">${stats.elo ?? "—"}</span>`;
+        const playerRankData = getPlayerRank(stats.elo, stats.totalGames);
+if (playerRankData.icon) {
+  playerRank.innerHTML = `
+    Ранг: <span style="color:#ffd700">${playerRankData.name}</span>
+    <div><img src="${playerRankData.icon}" alt="${playerRankData.name}" class="rank-icon"></div>
+  `;
+} else {
+  playerRank.innerHTML = `Ранг: <span style="color:#ffd700">${playerRankData.name}</span>`;
+}
+        // Иконка героя
+        const iconUrl = resolveHeroIcon(stats.mostPlayedHero);
+        heroImg.src = iconUrl || HERO_PLACEHOLDER;
+        heroImg.onerror = () => (heroImg.src = HERO_PLACEHOLDER); // защита от битых ссылок
+// === Ближайшие ранги ===
+const currentRankIndex = ranks.findIndex(r => stats.elo >= r.min && stats.elo <= r.max);
+const startIndex = Math.max(0, currentRankIndex - 2);
+const endIndex = Math.min(ranks.length - 1, currentRankIndex + 2);
+
+const nearbyRanks = ranks.slice(startIndex, endIndex + 1);
+const nearbyHTML = nearbyRanks.map((r, i) => {
+  const iconUrl = window.monsterIcons?.[r.icon]?.icon || HERO_PLACEHOLDER;
+  const isCurrent = i + startIndex === currentRankIndex;
+  return `
+    <div class="rank-row ${isCurrent ? 'current' : ''}">
+      <div class="rank-row-icon"><img src="${iconUrl}" alt="${r.name}" /></div>
+      <div class="rank-row-name">${r.name}</div>
+      <div class="rank-row-range">${r.min} — ${r.max}</div>
+    </div>
+  `;
+}).join("");
+
+playerRank.insertAdjacentHTML("afterend", `
+  <div class="rank-table">
+    <div class="rank-table-title">БЛИЖАЙШИЕ РАНГИ</div>
+    <div class="rank-table-body">${nearbyHTML}</div>
+  </div>
+`);
+        // Правая панель
+container.innerHTML = `
+  <div class="tabs">
+    <button class="tab-button active" data-tab="tab-general">Общая</button>
+    <button class="tab-button" data-tab="tab-castles">Замки</button>
+    <button class="tab-button" data-tab="tab-heroes">Герои</button>
+    <button class="tab-button" data-tab="tab-other">Прочее</button>
+  </div>
+
+  <!-- === Контент вкладок === -->
+  <div id="tab-general" class="tab-content active">
+    <div class="section">
+      <div class="section-title">ОБЩИЕ ДАННЫЕ</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Матчей</div><div class="stat-value">${stats.totalGames ?? 0}</div></div>
+        <div class="stat-card"><div class="stat-label">Победы</div><div class="stat-value">${stats.wins ?? 0}</div></div>
+        <div class="stat-card"><div class="stat-label">Поражения</div><div class="stat-value">${stats.losses ?? 0}</div></div>
+        <div class="stat-card"><div class="stat-label">Винрейт</div><div class="stat-value">${(stats.winrate ?? 0)}%</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">ГРАФИК ИЗМЕНЕНИЯ ЭЛО ЗА ПОСЛЕДНИЕ 30 ДНЕЙ</div>
+      <div class="chart-wrapper">
+        <canvas id="eloChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+<div id="tab-castles" class="tab-content">
+<div id="castle-content" style="display:none;">
+  
+  <!-- кнопка над сеткой -->
+  <div class="castle-full-link top-link">
+    <button id="open-full-castle-stats">Посмотреть полную статистику</button>
+  </div>
+
+  <!-- сетка 2x2 с карточками -->
+  <div class="castle-grid-4">
+
+      <!-- 1️⃣ Любимый замок игрока -->
+      <div class="castle-card">
+        <div class="castle-card-title">Любимый замок игрока</div>
+        <div class="castle-card-body">
+          <div class="castle-icon-block">
+            <img id="favCastle-icon" alt="Замок" />
+            <div id="favCastle-name" class="castle-name">—</div>
+          </div>
+          <div class="castle-stat">Матчей сыграно: <span id="favCastle-matches">—</span></div>
+          <div class="castle-stat">Винрейт: <span id="favCastle-winrate">—%</span></div>
+          <div class="castle-stat">Средняя стоимость старта: <span id="favCastle-gold">—</span></div>
+          <div class="castle-icon-block">
+            <img id="favCastle-unit-icon" alt="Юнит" />
+            <div id="favCastle-unit" class="castle-name">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2️⃣ Лучший замок игрока -->
+      <div class="castle-card">
+        <div class="castle-card-title">Лучший замок игрока</div>
+        <div class="castle-card-body">
+          <div class="castle-icon-block">
+            <img id="bestCastle-icon" alt="Замок" />
+            <div id="bestCastle-name" class="castle-name">—</div>
+          </div>
+          <div class="castle-stat">Матчей сыграно: <span id="bestCastle-matches">—</span></div>
+          <div class="castle-stat">Винрейт: <span id="bestCastle-winrate">—%</span></div>
+          <div class="castle-stat">Средняя стоимость старта: <span id="bestCastle-gold">—</span></div>
+          <div class="castle-icon-block">
+            <img id="bestCastle-unit-icon" alt="Юнит" />
+            <div id="bestCastle-unit" class="castle-name">—</div>
+          </div>
+        </div>
+      </div>
+      <!-- 3️⃣ Худший замок игрока -->
+      <div class="castle-card">
+        <div class="castle-card-title">Худший замок игрока</div>
+        <div class="castle-card-body">
+          <div class="castle-icon-block">
+            <img id="worstCastle-icon" alt="Замок" />
+            <div id="worstCastle-name" class="castle-name">—</div>
+          </div>
+          <div class="castle-stat">Матчей сыграно: <span id="worstCastle-matches">—</span></div>
+          <div class="castle-stat">Винрейт: <span id="worstCastle-winrate">—%</span></div>
+          <div class="castle-stat">Средняя стоимость старта: <span id="worstCastle-gold">—</span></div>
+          <div class="castle-icon-block">
+            <img id="worstCastle-unit-icon" alt="Юнит" />
+            <div id="worstCastle-unit" class="castle-name">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4️⃣ Тяжело играет против -->
+      <div class="castle-card">
+        <div class="castle-card-title">Тяжело играет против</div>
+        <div class="castle-card-body">
+          <div class="castle-icon-block">
+            <img id="hardCastle-icon" alt="Замок" />
+            <div id="hardCastle-name" class="castle-name">—</div>
+          </div>
+          <div class="castle-stat">Матчей сыграно: <span id="hardCastle-matches">—</span></div>
+          <div class="castle-stat">Винрейт: <span id="hardCastle-winrate">—%</span></div>
+          <div class="castle-stat">Средняя стоимость старта: <span id="hardCastle-gold">—</span></div>
+          <div class="castle-icon-block">
+            <img id="hardCastle-unit-icon" alt="Юнит" />
+            <div id="hardCastle-unit" class="castle-name">—</div>
+          </div>
+        </div>
+      </div>
+<!-- === Кнопка перехода на полную статистику === -->
+
+
+    </div>
+  </div>
+</div>
+
+<div id="tab-heroes" class="tab-content">
+  <div id="hero-content" style="display:none;">
+    <div class="castle-full-link top-link">
+      <button id="open-full-hero-stats">Посмотреть полную статистику героев</button>
+    </div>
+
+    <div class="castle-grid-4">
+
+      <!-- 1️⃣ Любимый герой -->
+      <div class="castle-card">
+        <div class="castle-card-title">Любимый герой</div>
+        <div class="castle-card-body">
+          <div class="castle-icon-block">
+            <img id="favHero-icon" alt="Герой" />
+            <div id="favHero-name" class="castle-name">—</div>
+          </div>
+          <div class="castle-stat">Матчей сыграно: <span id="favHero-matches">—</span></div>
+          <div class="castle-stat">Винрейт: <span id="favHero-winrate">—%</span></div>
+          <div class="castle-stat">Любимое существо:</div>
+          <div class="castle-icon-block">
+            <img id="favHero-unit-icon" alt="Юнит" />
+            <div id="favHero-unit" class="castle-name">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2️⃣ Лучший герой -->
+      <div class="castle-card">
+        <div class="castle-card-title">Лучший герой</div>
+        <div class="castle-card-body">
+          <div class="castle-icon-block">
+            <img id="bestHero-icon" alt="Герой" />
+            <div id="bestHero-name" class="castle-name">—</div>
+          </div>
+          <div class="castle-stat">Матчей сыграно: <span id="bestHero-matches">—</span></div>
+          <div class="castle-stat">Винрейт: <span id="bestHero-winrate">—%</span></div>
+          <div class="castle-stat">Любимое существо:</div>
+          <div class="castle-icon-block">
+            <img id="bestHero-unit-icon" alt="Юнит" />
+            <div id="bestHero-unit" class="castle-name">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3️⃣ Худший герой -->
+      <div class="castle-card">
+        <div class="castle-card-title">Худший герой</div>
+        <div class="castle-card-body">
+          <div class="castle-icon-block">
+            <img id="worstHero-icon" alt="Герой" />
+            <div id="worstHero-name" class="castle-name">—</div>
+          </div>
+          <div class="castle-stat">Матчей сыграно: <span id="worstHero-matches">—</span></div>
+          <div class="castle-stat">Винрейт: <span id="worstHero-winrate">—%</span></div>
+          <div class="castle-stat">Любимое существо:</div>
+          <div class="castle-icon-block">
+            <img id="worstHero-unit-icon" alt="Юнит" />
+            <div id="worstHero-unit" class="castle-name">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4️⃣ Ненавистный враг -->
+      <div class="castle-card">
+        <div class="castle-card-title">Ненавистный враг</div>
+        <div class="castle-card-body">
+          <div class="castle-icon-block">
+            <img id="enemyHero-icon" alt="Герой" />
+            <div id="enemyHero-name" class="castle-name">—</div>
+          </div>
+          <div class="castle-stat">Матчей сыграно: <span id="enemyHero-matches">—</span></div>
+          <div class="castle-stat">Процент побед против: <span id="enemyHero-winrate">—%</span></div>
+          <div class="castle-stat">Ненавистное существо:</div>
+          <div class="castle-icon-block">
+            <img id="enemyHero-unit-icon" alt="Юнит" />
+            <div id="enemyHero-unit" class="castle-name">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  <div id="tab-other" class="tab-content">
+    <div class="section"><div class="section-title">Прочая статистика</div><p style="text-align:center;opacity:.8;">Дополнительные метрики и детали.</p></div>
+  </div>`;
+
+await loadEloChart(stats.username);
+// === Переход к полной статистике замков ===
+const fullCastleBtn = document.getElementById("open-full-castle-stats");
+if (fullCastleBtn) {
+  fullCastleBtn.addEventListener("click", () => {
+    localStorage.setItem("selectedUsername", authUser);
+    window.location.href = "castle_stat_player.html";
+  });
+}
+// === Переключение вкладок + подгрузка статистики по замкам ===
+document.querySelectorAll(".tab-button").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+
+    // ✅ Подгружаем castleStats только один раз при первом открытии
+    if (btn.dataset.tab === "tab-castles" && !castleStatsLoaded) {
+      await loadCastleStats(authUser);
+    }
+    if (btn.dataset.tab === "tab-heroes" && !heroStatsLoaded) {
+  await loadHeroStats(authUser);
+}
+
+  });
+});
+
+
+      } catch (err) {
+        console.error("Ошибка загрузки статистики:", err);
+        container.innerHTML = `<p>⚠️ Не удалось загрузить данные.</p>`;
+      } finally {
+        loader.style.display = "none";
+      }
+    }
+// === Загрузка статистики по замкам ===
+let castleStatsLoaded = false;
+
+// === Новый метод загрузки статистики по замкам (через getGeneralStats) ===
+async function loadCastleStats(username) {
+  const tabLoader = document.getElementById("tab-loader");
+  const content = document.getElementById("castle-content");
+
+  tabLoader.style.display = "flex";
+  content.style.display = "none";
+
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbwus43_mJRl-50ygI8lbGiJDtmwDPS0HtkaxDCfIMqnSs9TzvYB4Ic1nhejEaDncYASRw/exec";
+
+  try {
+    // Получаем все матчи игрока
+    const jsonpData = await jsonpRequest(`${scriptUrl}?action=getGeneralStats&player=${encodeURIComponent(username)}`, 10000);
+    const matches = jsonpData?.values || [];
+    if (!matches.length) throw new Error("Нет данных");
+
+    // === Подготовка структур ===
+    const castles = [
+      "Замок","Оплот","Башня","Инферно","Некрополис",
+      "Темница","Цитадель","Крепость","Сопряжение","Причал","Фабрика"
+    ];
+    const stats = {};
+    castles.forEach(c => stats[c] = {
+      games:0,wins:0,losses:0,golds:[],
+      units:{}, winsByUnit:{}, lossesByUnit:{}
+    });
+
+    // === Проходим по матчам ===
+    matches.forEach(row => {
+      const player = row.nickPlayer;
+      const enemy = row.nickEnemy;
+      const isPlayer = player === username;
+      const isEnemy = enemy === username;
+      if (!isPlayer && !isEnemy) return;
+
+      const castle = isPlayer ? row.castlePlayer : row.castleEnemy;
+      const castleEnemy = isPlayer ? row.castleEnemy : row.castlePlayer;
+      const result = row.result;
+      const unit = isPlayer ? row.stackPlayer : row.stackEnemy;
+      const gold = Number(row.goldDiff || 0);
+
+      if (!stats[castle]) return;
+      const cs = stats[castle];
+
+      cs.games++;
+      const win = (isPlayer && result === "Победа") || (isEnemy && result === "Поражение");
+      if (win) cs.wins++; else cs.losses++;
+      cs.golds.push(isEnemy ? -gold : gold);
+
+      // считаем частоту по юнитам
+      if (unit && unit !== "Нет данных") {
+        cs.units[unit] = (cs.units[unit] || 0) + 1;
+        if (win) cs.winsByUnit[unit] = (cs.winsByUnit[unit] || 0) + 1;
+        else cs.lossesByUnit[unit] = (cs.lossesByUnit[unit] || 0) + 1;
+      }
+
+// === копим статистику ПРОТИВ замка соперника (работает и когда пользователь в "Нике противника") ===
+const oppCastle = isPlayer ? row.castleEnemy : row.castlePlayer;
+if (stats[oppCastle]) {
+  const ce = stats[oppCastle];
+  ce.against = ce.against || { games: 0, wins: 0, losses: 0, golds: [] };
+  ce.against.games++;
+
+  // победа с точки зрения пользователя:
+  const iWin = (isPlayer && result === "Победа") || (isEnemy && result === "Победа");
+  if (iWin) ce.against.wins++; else ce.against.losses++;
+
+  // разницу золота тоже приводим к знаку пользователя
+  ce.against.golds.push(isEnemy ? -gold : gold);
+}
+
+    });
+
+    const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+    const most = obj => {
+      let max = 0, name = "—";
+      for (const k in obj) if (obj[k] > max) [max,name] = [obj[k],k];
+      return name;
+    };
+
+    // === 1️⃣ Любимый замок ===
+    const favCastle = Object.entries(stats).reduce((a,[name,s]) => 
+      (s.games > (a.games||0) ? {name, ...s} : a), {games:0});
+    const favUnit = most(favCastle.units);
+    fillCastleCard("favCastle", favCastle.name, favCastle.games, favCastle.wins, favCastle.golds, favUnit);
+
+    // === 2️⃣ Лучший замок (винрейт ≥ 3 матчей) ===
+    const bestCastle = Object.entries(stats)
+      .filter(([_,s]) => s.games >= 3)
+      .map(([name,s]) => ({name, ...s, winrate: s.wins/s.games}))
+      .sort((a,b)=>b.winrate - a.winrate)[0] || null;
+    if (bestCastle) {
+      const bestUnit = most(bestCastle.winsByUnit);
+      fillCastleCard("bestCastle", bestCastle.name, bestCastle.games, bestCastle.wins, bestCastle.golds, bestUnit);
+    } else fillNoData("bestCastle");
+
+    // === 3️⃣ Худший замок ===
+    const worstCastle = Object.entries(stats)
+      .filter(([_,s]) => s.games >= 3)
+      .map(([name,s]) => ({name, ...s, winrate: s.wins/s.games}))
+      .sort((a,b)=>a.winrate - b.winrate)[0] || null;
+    if (worstCastle) {
+      const worstUnit = most(worstCastle.lossesByUnit);
+      fillCastleCard("worstCastle", worstCastle.name, worstCastle.games, worstCastle.wins, worstCastle.golds, worstUnit);
+    } else fillNoData("worstCastle");
+
+// === 4️⃣ Тяжело играет против ===
+// Собираем винрейт игрока ПРОТИВ каждого замка
+const castlesAgainst = {};
+
+matches.forEach(row => {
+  const isPlayer = row.nickPlayer === username;
+  const isEnemy  = row.nickEnemy  === username;
+  if (!isPlayer && !isEnemy) return;
+
+  const myResult = row.result;
+  const enemyCastle = isPlayer ? row.castleEnemy : row.castlePlayer;
+  const iWon = (isPlayer && myResult === "Победа") || (isEnemy && myResult === "Поражение");
+
+  if (!castlesAgainst[enemyCastle]) {
+    castlesAgainst[enemyCastle] = { games: 0, wins: 0 };
+  }
+  castlesAgainst[enemyCastle].games++;
+  if (iWon) castlesAgainst[enemyCastle].wins++;
+});
+
+// Теперь вычисляем самый сложный замок (самый низкий winrate игрока)
+let hardestCastle = null;
+let lowestWR = Infinity;
+
+for (const [castle, data] of Object.entries(castlesAgainst)) {
+  if (data.games >= 3) {
+    const wr = data.wins / data.games;
+    if (wr < lowestWR) {
+      lowestWR = wr;
+      hardestCastle = { name: castle, ...data, winrate: wr };
+    }
+  }
+}
+
+if (hardestCastle) {
+  // Находим юнитов, которые чаще всего побеждали игрока при играх против этого замка
+  const lossesUnits = {};
+  matches.forEach(row => {
+    const isPlayer = row.nickPlayer === username;
+    const isEnemy  = row.nickEnemy === username;
+    const lostTo =
+      (isPlayer && row.castleEnemy === hardestCastle.name && row.result === "Поражение") ||
+      (isEnemy && row.castlePlayer === hardestCastle.name && row.result === "Победа");
+    if (lostTo) {
+      const enemyUnit = isPlayer ? row.stackEnemy : row.stackPlayer;
+      if (enemyUnit && enemyUnit !== "Нет данных") {
+        lossesUnits[enemyUnit] = (lossesUnits[enemyUnit] || 0) + 1;
+      }
+    }
+  });
+
+  const hardUnit = Object.entries(lossesUnits).sort((a, b) => b[1] - a[1])[0]?.[0] || "Нет данных";
+
+  // Показываем реальный винрейт (без инверсии)
+  const realWR = hardestCastle.winrate * 100;
+  fillCastleCard(
+    "hardCastle",
+    hardestCastle.name,
+    hardestCastle.games,
+    hardestCastle.wins,
+    [],
+    hardUnit
+  );
+
+  // Правильный процент (округлён)
+  const el = document.getElementById("hardCastle-winrate");
+  if (el) el.textContent = `${realWR.toFixed(1)}%`;
+} else {
+  fillNoData("hardCastle");
+}
+
+
+  } catch (err) {
+    console.error("Ошибка загрузки castleStats:", err);
+    ["favCastle","bestCastle","worstCastle","hardCastle"].forEach(fillNoData);
+  } finally {
+    tabLoader.style.display = "none";
+    content.style.display = "block";
+    castleStatsLoaded = true;
+  }
+}
+
+// === вспомогательные функции ===
+function fillCastleCard(prefix, castle, games, wins, golds, unit) {
+  const castleIcons = window.castleIcons || {};
+  const monsterIcons = window.monsterIcons || {};
+
+  const elem = id => document.getElementById(`${prefix}-${id}`);
+
+  const winrateValue = games ? ((wins / games) * 100).toFixed(1) : null;
+  const winrate = games ? winrateValue + "%" : "0%";
+  const avgGoldValue = golds.length ? Math.round(golds.reduce((a,b)=>a+b,0)/golds.length) : null;
+  const avgGold = avgGoldValue !== null ? avgGoldValue : "—";
+
+  // 🎨 Винрейт — цвет
+  let winColor = "#999";
+  if (winrateValue !== null) {
+    const v = parseFloat(winrateValue);
+    if (v <= 30) winColor = "#ff4d4d";
+    else if (v <= 49) winColor = "#ffdd55";
+    else if (v <= 60) winColor = "#b4ff88";
+    else if (v <= 75) winColor = "#00cc66";
+    else winColor = "#3dff00";
+  }
+
+  // 🎨 Средний старт — цвет
+  let startColor = "#ccc";
+  if (avgGoldValue !== null) {
+    const s = avgGoldValue;
+    if (s <= -7500) startColor = "#ff0000";
+    else if (s <= -5000) startColor = "#ff6666";
+    else if (s <= -2500) startColor = "#ff9933";
+    else if (s <= 0) startColor = "#ffdd55";
+    else if (s <= 2500) startColor = "#b4ff88";
+    else if (s <= 5000) startColor = "#00cc66";
+    else if (s <= 10000) startColor = "#ffd700";
+  }
+
+  // === Заполняем текстовые значения ===
+  elem("name").textContent = castle || "Нет данных";
+  elem("matches").textContent = games || "—";
+  elem("winrate").textContent = winrate;
+  elem("gold").textContent = avgGold;
+// применяем цвета
+const winEl  = elem("winrate");
+const goldEl = elem("gold");
+if (winEl)  winEl.style.color  = winColor;
+if (goldEl) goldEl.style.color = startColor;
+
+  // === Иконка замка ===
+  const iconUrl = castleIcons[castle] || "";
+  const castleIconElem = elem("icon");
+  if (castleIconElem) {
+    if (iconUrl) {
+      castleIconElem.src = iconUrl;
+      castleIconElem.alt = castle || "";
+      castleIconElem.style.display = "block";
+    } else {
+      castleIconElem.style.display = "none";
+    }
+  }
+
+  // === Юнит ===
+  const unitTextElem = elem("unit");
+  const unitIconElem = elem("unit-icon");
+
+  if (!unit || unit === "Нет данных") {
+    // Нет информации — скрываем иконку, выводим текст
+    if (unitIconElem) unitIconElem.style.display = "none";
+    if (unitTextElem) unitTextElem.textContent = "Нет данных";
+  } else {
+    const icon = monsterIcons[unit?.toLowerCase()]?.icon;
+    if (icon) {
+      if (unitIconElem) {
+        unitIconElem.src = icon;
+        unitIconElem.alt = unit;
+        unitIconElem.style.display = "block";
+      }
+      if (unitTextElem) unitTextElem.textContent = unit;
+    } else {
+      // иконка не найдена
+      if (unitIconElem) unitIconElem.style.display = "none";
+      if (unitTextElem) unitTextElem.textContent = "Нет данных";
+    }
+  }
+}
+
+
+function fillNoData(prefix) {
+  const fields = ["name","matches","winrate","gold","unit"];
+  fields.forEach(f => {
+    const el = document.getElementById(`${prefix}-${f}`);
+    if (el) el.textContent = "Нет данных";
+  });
+  const icon = document.getElementById(`${prefix}-icon`);
+  if (icon) icon.src = "";
+  const unitIcon = document.getElementById(`${prefix}-unit-icon`);
+  if (unitIcon) unitIcon.src = "";
+  const w = document.getElementById(`${prefix}-winrate`);
+const g = document.getElementById(`${prefix}-gold`);
+if (w) w.style.color = "";
+if (g) g.style.color = "";
+
+}
+// === Загрузка статистики по героям ===
+let heroStatsLoaded = false;
+
+async function loadHeroStats(username) {
+  const tabLoader = document.getElementById("tab-loader");
+  const content = document.getElementById("hero-content");
+
+  tabLoader.style.display = "flex";
+  content.style.display = "none";
+
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbwus43_mJRl-50ygI8lbGiJDtmwDPS0HtkaxDCfIMqnSs9TzvYB4Ic1nhejEaDncYASRw/exec";
+
+  try {
+    const jsonpData = await jsonpRequest(`${scriptUrl}?action=getGeneralStats&player=${encodeURIComponent(username)}`, 10000);
+    const matches = jsonpData?.values || [];
+    if (!matches.length) throw new Error("Нет данных");
+
+// Две независимые карты: мои герои и герои соперника против меня
+const my = {};
+const vs = {};
+
+matches.forEach(row => {
+  const isPlayer = row.nickPlayer === username;
+  const isEnemy  = row.nickEnemy  === username;
+  if (!isPlayer && !isEnemy) return;
+
+  const result   = row.result;
+  const iWin     = (isPlayer && result === "Победа") || (isEnemy && result === "Поражение");
+
+  // мои: герой/юнит со стороны пользователя
+  // Если пользователь был "игроком" — берём starterPlayer / stackPlayer
+  // Если он был "противником" — берём starterEnemy / stackEnemy
+  const myHero = isPlayer ? row.starterPlayer : row.starterEnemy;
+  const myUnit = isPlayer ? row.stackPlayer   : row.stackEnemy;
+
+  if (!my[myHero]) my[myHero] = { games:0, wins:0, units:{} };
+  my[myHero].games++;
+// Засчитываем победу герою пользователя
+if (iWin) my[myHero].wins++;
+  if (myUnit && myUnit !== "Нет данных") {
+    my[myHero].units[myUnit] = (my[myHero].units[myUnit] || 0) + 1;
+  }
+
+
+  // соперник: герой/юнит с его стороны против меня
+  const oppHero  = isPlayer ? row.starterEnemy : row.starterPlayer;
+  const oppUnit  = isPlayer ? row.stackEnemy   : row.stackPlayer;
+  const oppWin   = !iWin;
+
+  if (!vs[oppHero]) vs[oppHero] = { games:0, wins:0, unitStats:{} };
+  vs[oppHero].games++;
+  if (oppWin) vs[oppHero].wins++;
+
+  if (oppUnit && oppUnit !== "Нет данных") {
+    const us = vs[oppHero].unitStats[oppUnit] || { games:0, wins:0 };
+    us.games++;
+    if (oppWin) us.wins++;
+    vs[oppHero].unitStats[oppUnit] = us;
+  }
+});
+
+const most = o => Object.entries(o).sort((a,b)=>b[1]-a[1])[0]?.[0] || "Нет данных";
+
+// ---------- 1️⃣ Любимый герой ----------
+const myEntries = Object.entries(my);
+const favEntry = myEntries.sort((a,b)=>b[1].games - a[1].games)[0];
+fillHeroCard("favHero", favEntry ? { name:favEntry[0], ...favEntry[1] } : null);
+
+// ---------- 2️⃣ Лучший герой ----------
+const best = myEntries
+  .filter(([,s]) => s.games >= 3)
+  .map(([name,s]) => ({ name, ...s, winrate: s.wins/s.games }))
+  .sort((a,b) => (b.winrate - a.winrate) || (b.games - a.games))[0];
+fillHeroCard("bestHero", best || null);
+
+// ---------- 3️⃣ Худший герой ----------
+const worst = myEntries
+  .filter(([,s]) => s.games >= 3)
+  .map(([name,s]) => ({ name, ...s, winrate: s.wins/s.games }))
+  .sort((a,b) => (a.winrate - b.winrate) || (b.games - a.games))[0];
+fillHeroCard("worstHero", worst || null);
+
+// === 4️⃣ Ненавистный враг ===
+// вычисляем винрейт игрока против этих героев (инвертируем)
+const vsEntries = Object.entries(vs)
+  .filter(([, s]) => s.games >= 3)
+  .map(([name, s]) => {
+    const enemyWinrate = s.wins / s.games; // доля побед врага против игрока
+    const playerWinrate = 1 - enemyWinrate; // инвертируем — победы пользователя против врага
+    return {
+      name,
+      games: s.games,
+      winrate: +(playerWinrate * 100).toFixed(1), // процент побед против
+      unitStats: s.unitStats || {}
+    };
+  })
+  // сортируем по возрастанию winrate — самый низкий = ненавистный
+  .sort((a, b) => (a.winrate - b.winrate) || (b.games - a.games));
+
+const hated = vsEntries[0];
+
+if (hated) {
+  // среди его юнитов берём тот, чей винрейт против игрока максимален
+  let bestUnitName = "Нет данных";
+  let bestWr = -1, bestGames = 0;
+  for (const [u, st] of Object.entries(hated.unitStats || {})) {
+    const wr = st.games ? st.wins / st.games : 0;
+    if (wr > bestWr || (wr === bestWr && st.games > bestGames)) {
+      bestWr = wr; bestGames = st.games; bestUnitName = u;
+    }
+  }
+
+  // 💡 гарантируем корректный процент побед против
+  if (!Number.isFinite(hated.winrate) || isNaN(hated.winrate)) hated.winrate = 0;
+  hated.winrate = Math.max(0, Math.min(100, hated.winrate)); // защита от выхода за диапазон
+
+  fillHeroCard("enemyHero", {
+    name: hated.name,
+    games: hated.games,
+    winrate: hated.winrate, // ← передаём реальный процент побед против
+    unitOverride: bestUnitName
+  });
+} else {
+  fillHeroCard("enemyHero", null);
+}
+
+
+
+  } catch (err) {
+    console.error("Ошибка загрузки heroStats:", err);
+    ["favHero","bestHero","worstHero","enemyHero"].forEach(fillHeroNoData);
+  } finally {
+    tabLoader.style.display = "none";
+    content.style.display = "block";
+    heroStatsLoaded = true;
+  }
+}
+
+function fillHeroCard(prefix, data) {
+  const heroIcons = window.heroIcons || {};
+  const monsterIcons = window.monsterIcons || {};
+  const elem = id => document.getElementById(`${prefix}-${id}`);
+  if (!data) return fillHeroNoData(prefix);
+
+  const hero = data.name || "Нет данных";
+  const winrateValue = data.games ? ((data.wins / data.games) * 100).toFixed(1) : null;
+  const favUnit =
+  data.unitOverride ??
+  (data.units ? Object.entries(data.units).sort((a,b)=>b[1]-a[1])[0]?.[0] : "Нет данных");
+
+
+  // 🎨 Цвет винрейта
+  let winColor = "#999";
+  if (winrateValue !== null) {
+    const v = parseFloat(winrateValue);
+    if (v <= 30) winColor = "#ff4d4d";
+    else if (v <= 49) winColor = "#ffdd55";
+    else if (v <= 60) winColor = "#b4ff88";
+    else if (v <= 75) winColor = "#00cc66";
+    else winColor = "#3dff00";
+  }
+
+  elem("name").textContent = hero;
+  elem("matches").textContent = data.games || "—";
+  // Если передан готовый процент побед (например, для "ненавистного врага") — используем его
+const displayWr = data.winrate ?? (winrateValue ? parseFloat(winrateValue).toFixed(1) : 0);
+let fixedWr = displayWr;
+if (fixedWr <= 1) fixedWr = fixedWr * 100; // если это доля, переводим в %
+fixedWr = Math.round(fixedWr); // округляем до целого
+elem("winrate").textContent = fixedWr + "%";
+  elem("winrate").style.color = winColor;
+
+  const icon = heroIcons[hero] || "";
+  const unitIcon = monsterIcons[favUnit?.toLowerCase()]?.icon || "";
+  elem("icon").src = icon;
+  elem("unit").textContent = favUnit || "Нет данных";
+  elem("unit-icon").src = unitIcon;
+}
+
+function fillHeroNoData(prefix) {
+  ["name","matches","winrate","unit"].forEach(id=>{
+    const el=document.getElementById(`${prefix}-${id}`);
+    if(el) el.textContent="Нет данных";
+  });
+  ["icon","unit-icon"].forEach(id=>{
+    const el=document.getElementById(`${prefix}-${id}`);
+    if(el) el.src="";
+  });
+}
+
+    initMyStats();
+    /* =====================================
+     ЗАГРУЗКА И ПОСТРОЕНИЕ ГРАФИКА ЭЛО
+  ===================================== */
+  const GAS_BASE_URL = "https://script.google.com/macros/s/AKfycbyFBd0h8ErXgmA16lByhsvOgVAJ-7zFkspg1t8TuK1hS0AVr4ACizgINDNR7thG4gcgag/exec";
+  let eloChartInstance = null;
+
+  async function loadEloChart(username) {
+    const base = `${GAS_BASE_URL}?action=eloHistory&username=${encodeURIComponent(username)}`;
+
+    try {
+      const res = await fetch(base, { method: "GET", mode: "cors", cache: "no-cache" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const rows = await res.json();
+      handleEloData(rows);
+    } catch (err) {
+      console.warn("fetch() не сработал, пробуем JSONP:", err);
+      try {
+        const rows = await jsonpRequest(base, 8000);
+        handleEloData(rows);
+      } catch (e2) {
+        console.error("JSONP тоже не сработал:", e2);
+        showNoData(true, "Не удалось загрузить данные");
+      }
+    }
+  }
+
+  function jsonpRequest(baseUrl, timeoutMs = 8000) {
+    return new Promise((resolve, reject) => {
+      const cbName = "jsonp_cb_" + Math.random().toString(36).slice(2);
+      const script = document.createElement("script");
+      const src = `${baseUrl}&callback=${cbName}`;
+      let done = false;
+
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error("JSONP timeout"));
+      }, timeoutMs);
+
+      function cleanup() {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        delete window[cbName];
+        script.remove();
+      }
+
+      window[cbName] = (payload) => {
+        cleanup();
+        resolve(payload);
+      };
+
+      script.onerror = () => {
+        cleanup();
+        reject(new Error("JSONP script load error"));
+      };
+
+      script.src = src;
+      document.head.appendChild(script);
+    });
+  }
+
+function handleEloData(rows) {
+  if (!Array.isArray(rows)) {
+    showNoData(true);
+    return;
+  }
+
+  const points = rows
+    .slice()
+    .sort((a, b) => Number(a.date) - Number(b.date))
+    .map(r => ({ date: Number(r.date), label: formatDateDM(r.date), value: Number(r.elo) }))
+    .filter(p => Number.isFinite(p.value));
+
+  // === 🔍 Проверка активности за последние 30 дней ===
+  const now = Date.now();
+  const cutoff = now - 30 * 24 * 60 * 60 * 1000; // 30 дней назад
+  const recentGames = points.filter(p => p.date >= cutoff);
+
+  if (recentGames.length < 3) {
+    showNoData(true, "Сыграйте больше, чтобы отобразить график.");
+    return;
+  }
+
+  if (points.length < 2) {
+    showNoData(true);
+    return;
+  }
+
+  showNoData(false);
+  renderEloChart(points);
+}
+
+// <-- вот здесь нужно закрыть handleEloData
+
+
+// === Теперь уже отдельно ===
+function renderEloChart(points) {
+  const labels = points.map(p => p.label);
+  const values = points.map(p => p.value);
+  const ctx = document.getElementById("eloChart").getContext("2d");
+
+  if (eloChartInstance) eloChartInstance.destroy();
+
+  // === Определяем ранги ===
+  const rankThresholds = ranks.map(r => ({ ...r }));
+  const getRankByElo = (elo) => rankThresholds.find(r => elo >= r.min && elo <= r.max) || null;
+
+  // === Находим переходы между рангами ===
+  const rankChanges = [];
+  for (let i = 1; i < values.length; i++) {
+    const prevRank = getRankByElo(values[i - 1]);
+    const currRank = getRankByElo(values[i]);
+    if (prevRank && currRank && prevRank.name !== currRank.name) {
+      rankChanges.push({
+        index: i,
+        rank: currRank,
+        up: currRank.min > prevRank.min
+      });
+    }
+  }
+
+  // === Находим текущий, нижний и верхний ранг ===
+  const currentElo = values[values.length - 1];
+  const currentRank = getRankByElo(currentElo);
+  const lowerRank = ranks.slice().reverse().find(r => r.max < currentElo) || ranks[0];
+  const upperRank = ranks.find(r => r.min > currentElo) || ranks[ranks.length - 1];
+  const lowerValue = lowerRank.max;
+  const upperValue = upperRank.min;
+
+  // === Строим график ===
+  eloChartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Эло",
+          data: values,
+          borderWidth: 2,
+          tension: 0.25,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          fill: false,
+          borderColor: "#ffd700"
+        },
+        // нижняя пунктирная линия
+        {
+          label: `${lowerRank.name} (${lowerValue})`,
+          data: Array(values.length).fill(lowerValue),
+          borderColor: "rgba(255, 0, 0, 0.4)",
+          borderDash: [6, 6],
+          borderWidth: 1,
+          pointRadius: 0,
+          fill: false,
+        },
+        // верхняя пунктирная линия
+        {
+          label: `${upperRank.name} (${upperValue})`,
+          data: Array(values.length).fill(upperValue),
+          borderColor: "rgba(0, 255, 0, 0.4)",
+          borderDash: [6, 6],
+          borderWidth: 1,
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: { color: "#ffdd55", font: { size: 10 } }
+        },
+        tooltip: {
+          callbacks: {
+            title: (items) => items[0].label,
+            label: (ctx) => `Эло: ${ctx.parsed.y}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: "#e0d0a0" } },
+        y: { grid: { display: true, color: "rgba(255,255,255,0.1)" }, ticks: { color: "#e0d0a0" } }
+      }
+    },
+    plugins: [{
+      id: "rankIcons",
+      afterDraw(chart) {
+        const { ctx, scales } = chart;
+        const xScale = scales.x;
+        const yScale = scales.y;
+        const time = Date.now() / 500; // для покачивания
+
+        rankChanges.forEach(change => {
+          const x = xScale.getPixelForValue(change.index);
+          const baseY = yScale.getPixelForValue(values[change.index]);
+          const y = baseY + Math.sin(time + x / 60) * 3; // эффект движения
+
+          const iconObj = window.monsterIcons?.[change.rank.icon];
+          const size = 28; // увеличенные иконки
+
+          if (iconObj?.icon) {
+            const img = new Image();
+            img.src = iconObj.icon;
+            ctx.save();
+            ctx.drawImage(img, x - size / 2, y - size - 8, size, size);
+            ctx.restore();
+          } else {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y - 10, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = change.up ? "limegreen" : "red";
+            ctx.fill();
+            ctx.restore();
+          }
+        });
+
+        // перерисовка для анимации
+        requestAnimationFrame(() => chart.draw());
+      }
+    }]
+  });
+}
+function showNoData(show, msg) {
+    const canvas = document.getElementById("eloChart");
+    const parent = canvas.parentElement;
+    let note = document.getElementById("eloChartEmpty");
+    if (!note) {
+      note = document.createElement("div");
+      note.id = "eloChartEmpty";
+      note.style = "text-align:center;padding:36px 8px;opacity:.8;font-style:italic;";
+      parent.appendChild(note);
+    }
+    note.textContent = msg || "Недостаточно данных для построения графика";
+    note.style.display = show ? "block" : "none";
+    canvas.style.display = show ? "none" : "block";
+  }
+
+  function formatDateDM(ts) {
+    const d = new Date(Number(ts));
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    return `${dd}.${mm}`;
+  }
+// === Переход к полной статистике замков ===
+const fullCastleBtn = document.getElementById("open-full-castle-stats");
+if (fullCastleBtn) {
+  fullCastleBtn.addEventListener("click", () => {
+    // сохраняем имя текущего пользователя, чтобы страница castle_stat_player знала кого грузить
+    localStorage.setItem("selectedUsername", authUser);
+    window.location.href = "castle_stat_player.html";
+  });
+}
+</script>
+
+  <style>
+    body {
+      background: url('https://i.postimg.cc/qv2pzHrV/image.gif') no-repeat center center fixed;
+      background-size: cover;
+      background-color: #0a0a1a;
+      color: #e0d0a0;
+      font-family: 'Press Start 2P', cursive;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: rgba(0, 15, 50, 0.1);
+      border: 3px solid #6e4f1a;
+      border-radius: 8px;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.7), 0 0 15px rgba(200, 150, 50, 0.4);
+    }
+
+    .page-title {
+      font-size: 1.2rem; color: #ffdd55; text-align: center; margin-bottom: 30px;
+    }
+
+    .stats-wrapper { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; justify-content: space-between; }
+
+    /* Левая колонка */
+    .player-info {
+      flex: 0 0 260px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.6);
+      border: 2px solid #6e4f1a;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    .player-name { font-size: 0.9rem; color: #ffdd55; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255,255,0,.5); }
+
+    .hero-frame {
+      border: 3px solid #6e4f1a; border-radius: 8px; overflow: hidden;
+      width: 140px; height: 140px; margin: 0 auto; box-shadow: 0 0 10px rgba(255,220,100,.2);
+      display: grid; place-items: center;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,.4), rgba(0,0,0,.7));
+    }
+    .hero-frame img { width: 100%; height: 100%; object-fit: cover; }
+
+    .player-elo, .player-rank { font-size: 0.8rem; margin-top: 8px; color: #ffd700; text-shadow: 0 0 5px rgba(255,255,255,.3); }
+
+    /* Правая колонка */
+    .stats-section { flex: 1 1 70%; }
+
+    .section-title { font-size: 0.9rem; margin-bottom: 15px; color: #ffdd55; text-align: center; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
+    .stat-card { background: rgba(0,0,0,.6); border: 2px solid #6e4f1a; border-radius: 8px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,.5); transition: transform .2s ease; }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 0 10px rgba(255,220,100,.4); }
+    .stat-label { font-size: 0.7rem; opacity: .8; margin-bottom: 8px; }
+    .stat-value { font-size: 1.2rem; color: #ffd700; }
+
+    /* Лоадер */
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  backdrop-filter: blur(2px);
+}
+
+.loader {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #ffdd55;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+    .chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  margin: 0 auto;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid #6e4f1a;
+  border-radius: 8px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+.chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
+  margin-bottom: 18px;
+  border: 2px solid #6e4f1a;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(10, 10, 25, 0.85);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 200, 60, 0.3);
+}
+
+.tab-button {
+  border: none;
+  border-right: 1px solid rgba(255, 215, 100, 0.25); /* золотой разделитель */
+  color: #ffdd55;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.8rem;
+  padding: 12px 6px;
+  background: linear-gradient(to bottom, rgba(25, 25, 50, 0.9), rgba(15, 15, 30, 0.9));
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-shadow: 0 0 6px rgba(255, 255, 200, 0.4);
+}
+
+.tab-button:last-child {
+  border-right: none;
+}
+
+.tab-button:hover {
+  background: linear-gradient(to bottom, rgba(70, 50, 20, 0.9), rgba(40, 30, 10, 0.9));
+  color: #fff8b0;
+  box-shadow: inset 0 0 8px rgba(255, 230, 120, 0.5);
+}
+
+.tab-button.active {
+  background: linear-gradient(to bottom, rgba(120, 90, 30, 0.95), rgba(90, 60, 20, 0.9));
+  color: #fff;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6), 0 0 12px rgba(255, 220, 100, 0.7);
+  transform: scale(1.02);
+  z-index: 1;
+}
+
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.castle-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.castle-info, .castle-units {
+  flex: 1 1 45%;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid #6e4f1a;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+}
+
+.castle-label {
+  font-size: 0.65rem;
+  color: #ffdd55;
+  margin-bottom: 6px;
+}
+
+.castle-value {
+  font-size: 0.9rem;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.castle-units ul {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+}
+
+.castle-units li {
+  font-size: 0.8rem;
+  margin: 3px 0;
+  color: #ffd;
+}
+#tab-loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; /* поверх вкладок */
+  backdrop-filter: blur(3px);
+}
+
+#tab-loader .loader {
+  border: 6px solid #ccc;
+  border-top: 6px solid #ffdd55;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+}
+/* === Ближайшие ранги === */
+.rank-table {
+  margin-top: 18px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid #6e4f1a;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+}
+
+.rank-table-title {
+  text-align: center;
+  color: #ffdd55;
+  font-size: 0.7rem;
+  margin-bottom: 10px;
+  text-shadow: 0 0 6px rgba(255, 220, 100, 0.4);
+}
+
+.rank-table-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rank-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.05);
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.rank-row.current {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+.rank-row-icon img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 4px rgba(255, 220, 100, 0.4));
+}
+
+.rank-row-name {
+  font-size: 0.7rem;
+  color: #ffd;
+}
+
+.rank-row-range {
+  font-size: 0.65rem;
+  color: #ccc;
+  text-align: right;
+}
+.castle-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.castle-card {
+  position: relative;
+  background: rgba(0, 20, 60, 0.75);
+  border: 2px solid #6e4f1a;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  box-shadow:
+    inset 0 0 15px rgba(0, 0, 40, 0.6),
+    0 0 10px rgba(255, 220, 100, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+.castle-card:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 0 15px rgba(255, 230, 120, 0.6),
+    inset 0 0 12px rgba(0, 0, 40, 0.8);
+}
+
+/* ✨ Анимация мягкого свечения рамки */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 10px rgba(255, 220, 100, 0.2),
+      inset 0 0 15px rgba(0, 0, 40, 0.6);
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgba(255, 220, 100, 0.45),
+      inset 0 0 20px rgba(0, 0, 60, 0.8);
+  }
+}
+
+
+.castle-card-title {
+  font-size: 0.75rem;
+  color: #ffdd55;
+  margin-bottom: 10px;
+  text-shadow: 0 0 6px rgba(255,220,100,0.4);
+}
+
+.castle-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.castle-icon-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.castle-icon-block img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(255,220,100,0.3);
+  background: rgba(20, 20, 40, 0.4);
+}
+
+.castle-name {
+  margin-top: 4px;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.castle-stat {
+  font-size: 0.7rem;
+  color: #ddd;
+  margin: 2px 0;
+}
+.castle-full-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 10px;
+}
+
+.castle-full-link.top-link {
+  margin-bottom: 25px;
+}
+
+.castle-full-link button {
+  background: linear-gradient(to bottom, rgba(70,50,20,0.9), rgba(40,30,10,0.9));
+  color: #ffdd55;
+  border: 2px solid #6e4f1a;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.7rem;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-shadow: 0 0 6px rgba(255,220,100,0.4);
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(255,220,100,0.3);
+}
+
+.castle-full-link button:hover {
+  background: linear-gradient(to bottom, rgba(110,79,26,0.9), rgba(70,50,20,0.9));
+  color: #fff8b0;
+  box-shadow: 0 0 15px rgba(255,220,100,0.5);
+  transform: scale(1.05);
+}
+
+
+
+  </style>
+</body>
+</html>

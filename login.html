@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Авторизация — Лицом к лицу</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <!-- bcrypt -->
+  <script src="js/bcrypt.min.js"></script>
+  <script>
+    if (typeof dcodeIO !== "undefined" && dcodeIO.bcrypt) {
+      window.bcrypt = dcodeIO.bcrypt;
+    }
+  </script>
+
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'Press Start 2P', cursive;
+      color: #e0d0a0;
+      text-shadow: 1px 1px 2px #000;
+      letter-spacing: 1px;
+      font-size: 0.75rem;
+    }
+    body {
+      background: url('https://i.postimg.cc/qv2pzHrV/image.gif') no-repeat center center fixed;
+      background-size: cover;
+      min-height: 100vh;
+      padding: 15px;
+      background-color: #0a0a1a;
+    }
+    .container {
+      background-color: rgba(0, 15, 50, 0.1);
+      border: 3px solid #6e4f1a;
+      border-radius: 8px;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.7),
+                  0 0 15px rgba(200, 150, 50, 0.4);
+      padding: 20px;
+      margin: 40px auto;
+      max-width: 500px;
+      width: 100%;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+      color: #ffdd55;
+      text-shadow: 0 2px 4px #000, 0 0 10px rgba(255, 255, 0, 0.7);
+      text-transform: uppercase;
+      background: linear-gradient(to right, #e0b050, #ffdd55);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: pulse 2s infinite alternate;
+    }
+    @keyframes pulse {
+      from { text-shadow: 0 2px 4px #000, 0 0 10px rgba(255, 255, 0, 0.7); }
+      to   { text-shadow: 0 2px 8px #000, 0 0 20px rgba(255, 255, 0, 0.9); }
+    }
+    .form-group { margin-bottom: 15px; }
+    input {
+      width: 100%; padding: 8px;
+      border: 1px solid #6e4f1a;
+      border-radius: 4px;
+      background: #0a0a1a;
+      color: #e0d0a0;
+      text-shadow: 1px 1px 2px #000;
+    }
+    button {
+      width: 100%; padding: 10px;
+      background: linear-gradient(to right, #e0b050, #ffdd55);
+      color: #000; border: none; border-radius: 4px;
+      cursor: pointer; font-weight: bold;
+      text-shadow: 0 0 3px #fff;
+      box-shadow: 0 0 5px rgba(255, 220, 100, 0.6);
+      transition: all 0.2s ease;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 10px rgba(255, 220, 100, 0.8);
+    }
+    #loginResult {
+      margin-top: 15px; padding: 10px;
+      border-radius: 4px; text-align: center;
+      font-weight: bold;
+    }
+    #loginResult.success { background: rgba(0, 20, 60, 0.8); color: #00ff00; }
+    #loginResult.error   { background: rgba(200, 0, 0, 0.8); color: #ff0000; }
+  </style>
+</head>
+<body>
+  <!-- Меню -->
+  <div id="menu-container"></div>
+  <script>
+    fetch("menu.html")
+      .then(r => r.text())
+      .then(d => { document.getElementById("menu-container").innerHTML = d; if (typeof initMenu==="function") initMenu(); });
+  </script>
+
+  <!-- Контейнер -->
+  <div class="container">
+    <h2>Вход</h2>
+    <form id="loginForm">
+      <div class="form-group">
+        <input type="text" id="username" name="username" placeholder="Игровой ник" required>
+      </div>
+      <div class="form-group">
+        <input type="password" id="password" name="password" placeholder="Пароль" required>
+      </div>
+      <button type="submit" id="loginBtn">Войти</button>
+    </form>
+    <div id="loginResult"></div>
+  </div>
+<!-- Лоадер -->
+<div id="loader" class="loader-overlay" style="display: none;">
+  <div class="loader"></div>
+</div>
+
+<script>
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyte-twuUEW1WnTTTk2_FWDB4hpAulIxAMsUCQ2deil5itys7Jk3jG1kO-G8_mjdYnhTA/exec";
+
+  const form = document.getElementById("loginForm");
+  const loader = document.getElementById("loader");
+  const resultEl = document.getElementById("loginResult");
+  const submitBtn = document.getElementById("loginBtn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    resultEl.textContent = "";
+    resultEl.className = "";
+    submitBtn.disabled = true;
+    loader.style.display = "flex"; // показать лоадер
+
+    try {
+      const username = form.username.value.trim();
+      const password = form.password.value.trim();
+
+      const resp = await fetch(APPS_SCRIPT_URL + "?getUserByUsername=" + encodeURIComponent(username));
+      const data = await resp.json();
+
+      if (!data.exists) {
+        resultEl.textContent = "❌ Пользователь не найден.";
+        resultEl.className = "error";
+      } else if (bcrypt.compareSync(password, data.passwordHash)) {
+        localStorage.setItem("authUser", data.username);
+        resultEl.textContent = "✅ Добро пожаловать, " + data.username + "!";
+        resultEl.className = "success";
+        setTimeout(() => window.location.href = "my-stats.html", 1000);
+      } else {
+        resultEl.textContent = "❌ Неверный пароль.";
+        resultEl.className = "error";
+      }
+    } catch (err) {
+      console.error(err);
+      resultEl.textContent = "Ошибка соединения.";
+      resultEl.className = "error";
+    } finally {
+      loader.style.display = "none"; // скрыть лоадер
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
+</div>
+</body>
+</html>

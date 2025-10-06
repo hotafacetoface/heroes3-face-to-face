@@ -1,0 +1,104 @@
+<div class="menu-container">
+  <ul class="main-menu left">
+    <li><a href="home.html" class="menu-item">Главная</a></li>
+    <li><a href="updates.html" class="menu-item">Обновления</a></li>
+
+    <li class="has-dropdown" id="stats-menu">
+      <a href="#" class="menu-item">Статистика</a>
+      <div class="dropdown-menu" id="stats-dropdown">
+        <a href="#" class="dropdown-item">Текущая мета</a>
+        <a href="#" class="dropdown-item">Топ игроков</a>
+        <a href="#" class="dropdown-item">Замки</a>
+      </div>
+    </li>
+
+    <li class="has-dropdown" id="database-menu">
+      <a href="#" class="menu-item">База данных</a>
+      <div class="dropdown-menu" id="database-dropdown">
+        <a href="index.html" class="dropdown-item">Герои</a>
+        <a href="#" class="dropdown-item">Монстры</a>
+        <a href="#" class="dropdown-item">Артефакты</a>
+        <a href="#" class="dropdown-item">Заклинания</a>
+      </div>
+    </li>
+  </ul>
+
+<ul class="main-menu right" id="auth-menu"></ul>
+</div>
+<!-- Модальное окно публикации матча -->
+<div id="matchModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span id="closeModal" class="close">&times;</span>
+
+    <div id="questionContainer"></div>
+
+    <div class="modal-footer">
+      <button id="prevBtn" class="btn hidden">Назад</button>
+      <button id="nextBtn" class="btn">Далее</button>
+    </div>
+  </div>
+</div>
+<style>
+  .has-dropdown {
+  position: relative;
+}
+
+.has-dropdown .dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: auto;
+  right: 0;                /* якорим к правому краю ника */
+  background: #123;
+  border: 1px solid #6e4f1a;
+  min-width: 200px;
+  max-height: 70vh;        /* ограничиваем высоту */
+  overflow-y: auto;        /* скролл если не влезает */
+  z-index: 1000;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+
+.has-dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu a {
+  display: block;
+  padding: 8px 12px;
+  color: #e0d0a0;
+  text-decoration: none;
+  white-space: nowrap;     /* пункты в одну строку */
+}
+
+.dropdown-menu a:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-menu a {
+  display: block;
+  padding: 8px 12px;
+  color: #e0d0a0;
+  text-decoration: none;
+}
+.menu-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.main-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+.main-menu.left li {
+  margin-right: 15px;
+}
+
+.main-menu.right li {
+  margin-left: 15px;
+}
+</style>

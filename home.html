@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Главная — Лицом к лицу</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- JS -->
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+  <script src="js/main.js" defer></script>
+</head>
+<body>
+
+  <!-- Подключаем меню -->
+  <div id="menu-placeholder"></div>
+  <script>
+    fetch("menu.html")
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById("menu-placeholder").innerHTML = data;
+        if (typeof initMenu === "function") initMenu();
+      })
+      .catch(error => console.error("Ошибка загрузки меню:", error));
+  </script>
+
+  <!-- Контент главной страницы -->
+  <div class="container">
+    <h1>FACE TO FACE v1.08</h1>
+    
+    <!-- Первый блок (из main.html) -->
+    <div class="section">
+      <div class="section-title">ПОЧЕМУ ЭТОТ ШАБЛОН ЛУЧШЕ?</div>
+      <div class="section-content">
+        <p>FaceToFace v1.08 — это не просто шаблон для Heroes of Might and Magic III, а <span class="highlight">полноценная система для быстрой и динамичной игры</span>, созданная на основе тысяч сыгранных матчей и анализа статистики.</p>
+        
+        <div class="divider"></div>
+        
+        <p><strong>Скорость игры:</strong> В отличие от JebusCross или JebusOutcast, где матчи могут затягиваться на часы, FaceToFace v1.08 гарантирует, что каждый матч завершится за <span class="highlight">30-80 минут</span>. Никаких бесконечных экономических стратегий — только чистый геймплей!</p>
+        
+        <div class="feature-list">
+          <li>Используются только родные войска замков — никаких "экзотических" юнитов</li>
+          <li>Каждый герой имеет сбалансированный набор навыков — нет бесполезных умений</li>
+          <li>Новые герои регулярно добавляются и балансируются на основе реальной статистики</li>
+          <li>Поддержка агрессивной и оборонительной стратегии — вы выбираете свой путь</li>
+        </div>
+        
+        <p>Хотите удивить противника? Выходите в центр уже на второй неделе! Или предпочитаете долгую игру? Отстраивайте экономику и завершайте финальное сражение в конце первого месяца!</p>
+      </div>
+    </div>
+
+    <!-- Остальные блоки без изменений -->
+    <div class="section">
+      <div class="section-title">ПЕРЕРАБОТАННЫЕ ГЕРОИ</div>
+      <div class="section-content">
+        <p>Мы полностью переработали всех героев, чтобы <span class="highlight">убрать бесполезные навыки</span> и сделать каждого героя уникальным.</p>
+        <div class="divider"></div>
+        <ul class="feature-list">
+          <li>Ежемесячные обновления баланса</li>
+          <li>Растущая база данных героев</li>
+          <li>Влияние игроков через обратную связь</li>
+          <li>Все изменения публикуются в разделе «Обновления»</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">СКАЧАТЬ И ПОЛУЧИТЬ ДОСТУП</div>
+      <div class="section-content">
+        <p>Скачайте актуальную версию шаблона и присоединяйтесь к сообществу игроков FaceToFace!</p>
+        <div class="cta-section">
+          <div class="cta-title">СКАЧАТЬ ШАБЛОН</div>
+          <a href="https://github.com/Trioracks/Heroes3FaceToFace" class="button" target="_blank">С GitHub</a>
+        </div>
+        <div class="divider"></div>
+        <p>Публикуйте каждый сыгранный матч, отслеживайте мету карты и свой прогресс!</p>
+        <div class="cta-section">
+          <div class="cta-title">ДОБАВИТЬ МАТЧ</div>
+          <a href="#" class="button">ЗАРЕГИСТРИРОВАТЬСЯ</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">ПРИСОЕДИНЯЙТЕСЬ К СООБЩЕСТВУ!</div>
+      <div class="section-content">
+        <ul class="feature-list">
+          <li>Обсуждайте стратегии с игроками</li>
+          <li>Следите за топ-игроками</li>
+          <li>Участвуйте в турнирах</li>
+          <li>Ваш вклад ценится!</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">
+      © 2024 FaceToFace v1.08 | Создано для фанатов Heroes 3
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Лицом к лицу — Статистика по замкам</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+</head>
+
+<body>
+  <!-- Меню -->
+  <div id="menu-placeholder"></div>
+
+  <!-- ✅ Лоадер -->
+  <div id="loader" class="loader-overlay" style="display:none;">
+    <div class="loader"></div>
+  </div>
+
+  <!-- Контейнер -->
+  <div class="content-box" style="width: 95%; margin: 40px auto;">
+    <div class="section-title" id="castle-title">
+      ПОЛНАЯ СТАТИСТИКА ПО ЗАМКАМ
+    </div>
+
+    <div class="table-responsive">
+      <table id="castle-stats-table" class="table">
+        <colgroup>
+          <col style="width:90px;">
+          <col style="width:90px;">
+          <col style="width:80px;">
+          <col style="width:80px;">
+          <col style="width:80px;">
+          <col style="width:100px;">
+          <col style="width:100px;">
+          <col style="width:80px;">
+          <col style="width:100px;">
+          <col style="width:80px;">
+          <col style="width:80px;">
+          <col style="width:100px;">
+        </colgroup>
+
+        <thead>
+          <tr>
+            <th><div class="column-header"><div class="column-title">Замок</div></div></th>
+            <th><div class="column-header"><div class="column-title">Сыграно</div></div></th>
+            <th><div class="column-header"><div class="column-title">Винрейт</div></div></th>
+            <th><div class="column-header"><div class="column-title">Побед</div></div></th>
+            <th><div class="column-header"><div class="column-title">Поражений</div></div></th>
+            <th><div class="column-header"><div class="column-title">Герой</div></div></th>
+            <th><div class="column-header"><div class="column-title">Юнит</div></div></th>
+            <th><div class="column-header"><div class="column-title">Бонус</div></div></th>
+            <th><div class="column-header"><div class="column-title">Торг</div></div></th>
+            <th><div class="column-header"><div class="column-title">ГМ</div></div></th>
+            <th><div class="column-header"><div class="column-title">Эконом.</div></div></th>
+            <th><div class="column-header"><div class="column-title">Финал</div></div></th>
+          </tr>
+        </thead>
+        <tbody id="castle-stats-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Иконки и общий JS -->
+  <script src="js/icons-castles.js"></script>
+  <script src="js/icons-heroes.js"></script>
+  <script src="js/icons-monsters.js"></script>
+  <script src="js/main.js"></script>
+
+  <script>
+    // === Подключаем меню ===
+    fetch("menu.html")
+      .then(r => r.text())
+      .then(d => {
+        document.getElementById("menu-placeholder").innerHTML = d;
+        if (typeof initMenu === "function") initMenu();
+        initCastleStatsTable();
+      })
+      .catch(err => console.error("Ошибка загрузки меню:", err));
+
+    // === Основная инициализация ===
+    function initCastleStatsTable() {
+      const username = localStorage.getItem('selectedUsername') || 'Test3';
+      document.getElementById("castle-title").innerHTML = `
+        ПОЛНАЯ СТАТИСТИКА ПО ЗАМКАМ ИГРОКА 
+        <span class="player-name">${username}</span>
+      `;
+      loadPlayerStats(username);
+    }
+
+    // === JSONP-запрос ===
+    function loadPlayerStats(username) {
+      const loader = document.getElementById("loader");
+      loader.style.display = "flex";
+
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbwus43_mJRl-50ygI8lbGiJDtmwDPS0HtkaxDCfIMqnSs9TzvYB4Ic1nhejEaDncYASRw/exec";
+      const url = `${scriptUrl}?action=getGeneralStats&player=${encodeURIComponent(username)}&callback=processStats`;
+      const script = document.createElement("script");
+      script.src = url;
+      document.body.appendChild(script);
+    }
+
+    // === Обработка данных ===
+    function processStats(data) {
+      const loader = document.getElementById("loader");
+      const icons = window.castleIcons || {};
+      const heroIcons = window.heroIcons || {};
+      const monsterIcons = window.monsterIcons || {};
+      const username = localStorage.getItem('selectedUsername') || 'Test3';
+
+      const orderedCastles = [
+        "Замок","Оплот","Башня","Инферно","Некрополис",
+        "Темница","Цитадель","Крепость","Сопряжение","Причал","Фабрика"
+      ];
+
+      const stats = {};
+      orderedCastles.forEach(c => stats[c] = {
+        games: 0, wins: 0, losses: 0,
+        heroes: {}, units: {}, bonuses: {},
+        eco: {}, gm: {}, starts: [], finals: []
+      });
+
+      const safe = v => (v === "" || v === undefined || v === null ? "Нет данных" : v);
+
+      (data.values || []).forEach(row => {
+        const nickPlayer = safe(row.nickPlayer);
+        const nickEnemy = safe(row.nickEnemy);
+        const isPlayer = nickPlayer === username;
+        const isEnemy = nickEnemy === username;
+        if (!isPlayer && !isEnemy) return;
+
+        const castle = isPlayer ? safe(row.castlePlayer) : safe(row.castleEnemy);
+        if (!stats[castle]) return;
+
+        const cs = stats[castle];
+        cs.games++;
+
+        const res = safe(row.result);
+        const win = (isPlayer && res === "Победа") || (isEnemy && res === "Поражение");
+        win ? cs.wins++ : cs.losses++;
+
+        const hero = isPlayer ? safe(row.starterPlayer) : safe(row.starterEnemy);
+        const unit = isPlayer ? safe(row.stackPlayer) : safe(row.stackEnemy);
+        const bonus = isPlayer ? safe(row.bonusPlayer) : safe(row.bonusEnemy);
+        const eco = safe(row.eco);
+        const gm = isPlayer ? safe(row.gm) : "Нет данных";
+        const gold = safe(row.goldDiff);
+        const final = safe(row.final);
+
+        if (hero) cs.heroes[hero] = (cs.heroes[hero] || 0) + 1;
+        if (unit) cs.units[unit] = (cs.units[unit] || 0) + 1;
+        if (bonus) cs.bonuses[bonus] = (cs.bonuses[bonus] || 0) + 1;
+        if (eco) cs.eco[eco] = (cs.eco[eco] || 0) + 1;
+        if (gm) cs.gm[gm] = (cs.gm[gm] || 0) + 1;
+
+        const goldNum = isNaN(gold) ? 0 : Number(gold);
+        cs.starts.push(isEnemy ? -goldNum : goldNum);
+
+        const finalNum = parseInt(final);
+        if (!isNaN(finalNum)) cs.finals.push(finalNum);
+      });
+
+      const body = document.getElementById("castle-stats-body");
+body.innerHTML = orderedCastles.map(castle => {
+  const cs = stats[castle];
+  const hasGames = cs.games > 0;
+
+  const winrateValue = hasGames ? ((cs.wins / cs.games) * 100).toFixed(1) : null;
+  const winrate = hasGames ? winrateValue + "%" : "нет матчей";
+  const avgStartValue = hasGames ? avg(cs.starts) : null;
+  const avgStart = hasGames ? avgStartValue.toFixed(0) : "нет матчей";
+  const avgFinal = hasGames ? convertToDateFormat(avg(cs.finals)) : "нет матчей";
+
+  const rowData = {
+    played: hasGames ? cs.games : "нет матчей",
+    winrate,
+    winrateValue,
+    wins: hasGames ? cs.wins : "нет матчей",
+    losses: hasGames ? cs.losses : "нет матчей",
+    hero: hasGames ? most(cs.heroes) : "нет матчей",
+    unit: hasGames ? most(cs.units) : "нет матчей",
+    bonus: hasGames ? most(cs.bonuses) : "нет матчей",
+    start: avgStart,
+    startValue: avgStartValue,
+    gm: hasGames ? most(cs.gm) : "нет матчей",
+    eco: hasGames ? most(cs.eco) : "нет матчей",
+    time: avgFinal
+  };
+
+  // 🎨 Винрейт — цвет
+  let winColor = "#999";
+  if (rowData.winrateValue !== null) {
+    const v = rowData.winrateValue;
+    if (v <= 30) winColor = "#ff4d4d";
+    else if (v <= 49) winColor = "#ffdd55";
+    else if (v <= 60) winColor = "#b4ff88";
+    else if (v <= 75) winColor = "#00cc66";
+    else winColor = "#3dff00";
+  }
+
+  // 🎨 Бонус — цвет
+  const bonusLower = rowData.bonus.toLowerCase();
+  let bonusColor = "#ccc";
+  if (bonusLower.includes("артефакт")) bonusColor = "#c77dff";
+  else if (bonusLower.includes("золото")) bonusColor = "#ffd700";
+  else if (bonusLower.includes("ресурс")) bonusColor = "#a0522d";
+  else if (bonusLower.includes("случ")) bonusColor = "#ff4444";
+
+  // 🎨 Средний старт — цвет
+  let startColor = "#ccc";
+  if (rowData.startValue !== null) {
+    const s = rowData.startValue;
+    if (s <= -7500) startColor = "#ff0000";
+    else if (s <= -5000) startColor = "#ff6666";
+    else if (s <= -2500) startColor = "#ff9933";
+    else if (s <= 0) startColor = "#ffdd55";
+    else if (s <= 2500) startColor = "#b4ff88";
+    else if (s <= 5000) startColor = "#00cc66";
+    else if (s <= 10000) startColor = "#ffd700";
+  }
+
+  // 🧙 Герой
+  const heroIcon = heroIcons[rowData.hero] || "";
+  const heroCell = heroIcon && rowData.hero !== "нет матчей"
+    ? `<div style="display:flex;flex-direction:column;align-items:center;">
+         <img src="${heroIcon}" alt="${rowData.hero}" style="width:28px;height:28px;">
+         <div style="font-size:9px;color:#ffdd55;">${rowData.hero}</div>
+       </div>`
+    : `<div>${rowData.hero}</div>`;
+
+  // 🐉 Юнит
+  const unitKey = rowData.unit.toLowerCase().trim();
+  const unitIcon = monsterIcons[unitKey]?.icon || "";
+  const unitCell = unitIcon && rowData.unit !== "нет матчей"
+    ? `<div style="display:flex;flex-direction:column;align-items:center;">
+         <img src="${unitIcon}" alt="${rowData.unit}" style="width:28px;height:28px;">
+         <div style="font-size:9px;color:#ffdd55;">${rowData.unit}</div>
+       </div>`
+    : `<div>${rowData.unit}</div>`;
+
+  return `
+    <tr>
+      <td style="text-align:center;">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <img src="${icons[castle]}" alt="${castle}">
+          <div style="font-size:10px;color:#ffdd55;">${castle}</div>
+        </div>
+      </td>
+      <td>${rowData.played}</td>
+      <td style="color:${winColor};font-weight:bold;">${rowData.winrate}</td>
+      <td>${rowData.wins}</td>
+      <td>${rowData.losses}</td>
+      <td>${heroCell}</td>
+      <td>${unitCell}</td>
+      <td style="color:${bonusColor};">${rowData.bonus}</td>
+      <td style="color:${startColor};">${rowData.start}</td>
+      <td>${rowData.gm}</td>
+      <td>${rowData.eco}</td>
+      <td>${rowData.time}</td>
+    </tr>`;
+}).join("");
+
+
+      $('#castle-stats-table').DataTable({
+        paging:false, info:false, searching:false,
+        order:[[1,"desc"]],
+        language:{url:"https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json"}
+      });
+
+      loader.style.display = "none";
+    }
+
+    function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0;}
+    function most(o){let m=0,v="";for(const k in o)if(o[k]>m)[m,v]=[o[k],k];return v||"Нет данных";}
+    function convertToDateFormat(n){
+  if(!n || isNaN(n)) return "Нет данных";
+  const m = Math.floor(n / 100);
+  const w = Math.floor((n % 100) / 10);
+  const d = Math.ceil(n % 10); // округляем вверх
+  return `${m}м ${w}н ${d}д`;
+}
+  </script>
+
+
+  <style>
+    body { background:url('https://i.postimg.cc/qv2pzHrV/image.gif') no-repeat center center fixed; background-size:cover; background-color:#0a0a1a; }
+
+    .loader-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      backdrop-filter: blur(2px);
+    }
+    .loader {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #ffdd55;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* === Оформление таблицы (твоё текущее) === */
+    .dataTables_wrapper .dataTables_empty {
+      color: #ffdd55 !important;
+      font-size: 10px;
+      text-shadow: 0 0 5px rgba(255, 220, 100, 0.4);
+    }
+    #castle-title { text-shadow: 0 0 6px rgba(255, 220, 100, 0.7); }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 10px;
+      background: rgba(0, 15, 50, 0.3);
+      border: 2px solid #6e4f1a;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+      table-layout: fixed;
+    }
+    .table th, .table td {
+      padding: 5px 3px;
+      border-bottom: 1px solid rgba(255, 220, 100, 0.2);
+      color: #e8e0c0;
+      text-align: center;
+      vertical-align: middle;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    /* === Единообразное выравнивание заголовков === */
+.table th {
+  background: linear-gradient(180deg, rgba(0,40,120,0.95) 0%, rgba(0,20,80,0.9) 100%);
+  color: #ffdd55;
+  text-shadow: 0 0 5px rgba(255, 220, 100, 0.6);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  font-weight: normal;
+  text-align: center;
+  vertical-align: middle;
+  padding: 6px 4px;
+  height: 38px;
+  line-height: 1.1;
+  border-bottom: 1px solid rgba(255, 220, 100, 0.2);
+  border-right: 1px solid rgba(255, 220, 100, 0.1);
+  box-sizing: border-box;
+  letter-spacing: 0.5px;
+}
+
+.table th div.column-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+}
+
+.table th div.column-title {
+  display: inline-block;
+  width: 100%;
+  word-wrap: break-word;
+  text-align: center;
+  line-height: 1.2;
+}
+
+    .table tbody tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .table th:hover {
+      background: rgba(70, 50, 20, 0.8);
+      color: #fff6b0;
+    }
+    .table td img {
+      width: 26px;
+      height: 26px;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+  </style>
+</body>
+</html>
