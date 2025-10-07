@@ -75,7 +75,70 @@
   </style>
 </head>
 <body>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const user = localStorage.getItem("authUser");
 
+  // если пользователь не авторизован
+  if (!user || user === "Неавторизован" || user.trim() === "") {
+    document.body.innerHTML = `
+      <div style="
+        color: #ff5555;
+        text-align: center;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.8rem;
+        margin-top: 30vh;
+        background: rgba(0,0,0,0.6);
+        padding: 40px;
+        border: 2px solid #aa0000;
+        border-radius: 10px;
+        display: inline-block;
+      ">
+        🚫 Сначала авторизуйтесь на сайте!<br><br>
+        <a href="home.html" style="color:#ffdd55; text-decoration:underline;">Перейти на главную</a>
+      </div>
+    `;
+    return; // прерываем выполнение остального скрипта
+  }
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const user = localStorage.getItem("authUser");
+
+  if (!user || user === "Неавторизован" || user.trim() === "") {
+    // полностью очищаем контент
+    document.body.innerHTML = `
+      <div style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #ff5555;
+        text-align: center;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.8rem;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 40px 50px;
+        border: 2px solid #aa0000;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+      ">
+        🔒 Сначала авторизуйтесь на сайте!<br><br>
+        <a href="home.html" style="
+          color: #ffdd55;
+          text-decoration: underline;
+          display: inline-block;
+          margin-top: 10px;
+        ">Перейти на главную</a>
+      </div>
+    `;
+    document.body.style.background = "url('https://iili.io/KGogCiP.gif') no-repeat center center fixed";
+    document.body.style.backgroundSize = "cover";
+    return;
+  }
+});
+</script>
 <div id="menu-placeholder"></div>
 
 <h1>🗡️ Опубликовать матч</h1>
@@ -274,11 +337,25 @@
     <div class="row">
       <div><label>Взят второй замок?</label><select name="secondCastle"><option></option><option>Да</option><option>Нет</option></select></div>
       <div><label>Когда взят второй замок?</label><input type="text" name="secondCastleDate"></div>
-      <div><label>Охрана в центре?</label><input type="text" name="centerGuard"></div>
+      <div>
+  <label>Охрана в центре?</label>
+  <div class="guard-select-wrapper">
+    <div class="guard-select-display" id="centerGuardDisplay" title="Выберите существо">Выберите существо...</div>
+    <input type="hidden" name="centerGuard" id="centerGuardInput">
+    <div class="guard-dropdown" id="centerGuardDropdown"></div>
+  </div>
+</div>
       <div><label>Удалось выйти в центр?</label><select name="centerEnter"><option></option><option>Да</option><option>Нет</option></select></div>
       <div><label>Когда вышел в центр?</label><input type="text" name="centerDate"></div>
       <div><label>Пробил ли охрану на территорию врага?</label><select name="enemyZone"><option></option><option>Да</option><option>Нет</option></select></div>
-      <div><label>Кто был у врага на охране?</label><input type="text" name="enemyGuard"></div>
+      <div>
+  <label>Кто был у врага на охране?</label>
+  <div class="guard-select-wrapper">
+    <div class="guard-select-display" id="enemyGuardDisplay" title="Выберите существо">Выберите существо...</div>
+    <input type="hidden" name="enemyGuard" id="enemyGuardInput">
+    <div class="guard-dropdown" id="enemyGuardDropdown"></div>
+  </div>
+</div>
       <div><label>Конец игры</label><input type="text" name="gameEnd"></div>
       <div>
   <label>Уровень экономики</label>
@@ -316,44 +393,60 @@ document.addEventListener("DOMContentLoaded", () => {
   const playerNick = document.getElementById("playerNick");
 
   patch.value = "1.08"; // или можно потом заменить fetch из Google Sheets
-  date.value = new Date().toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = now.getFullYear();
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  date.value = `${day}.${month}.${year} ${hours}:${minutes}`;
+
   playerNick.value = localStorage.getItem("authUser") || "Неавторизован";
 });
+</script>
+<script>
+// === Отправка заявки (с уведомлением перед переходом) ===
+document.addEventListener("DOMContentLoaded", () => {
+  const form   = document.getElementById("matchForm");
+  const loader = document.getElementById("loader-overlay");
 
-// Заглушка на отправку
-document.getElementById("matchForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  // === Отправка данных в Google Sheets ===
-document.getElementById("matchForm").addEventListener("submit", async (e) => {
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const form = e.target;
-  const formData = new FormData(form);
-  const json = Object.fromEntries(formData.entries());
+  const data = Object.fromEntries(new FormData(form).entries());
+  const payload = JSON.stringify(data);
 
   try {
-    const response = await fetch("https://script.google.com/macros/s/AKfycbx1wNCYhFSWfmeHbNhla7-xPzy2QGTLjtqc1aaZQZxNijg3Oe_Qq-yY_DPSBDVqtlsrNA/exec", {
-      method: "POST",
-      body: JSON.stringify(json),
-      headers: { "Content-Type": "application/json" }
-    });
+    loader.style.display = "flex"; // показать лоадер
 
-    const result = await response.json();
-    if (result.result === "success") {
-      alert("✅ Заявка успешно отправлена!");
-      form.reset();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      alert("⚠️ Ошибка при отправке!");
-    }
+    // Отправляем POST без CORS
+    await fetch(
+      "https://script.google.com/macros/s/AKfycbxHebt_KTixVszF13fZW3arJATr_E1_a8KQcXyhh1hGGoPN0kcH4WHxlAuS0BPSZSTRwA/exec?t=" + Date.now(),
+      {
+        method: "POST",
+        mode: "no-cors",
+        body: payload
+      }
+    );
+
+    loader.style.display = "none";
+    form.reset();
+
+    alert("✅ Заявка успешно отправлена администратору на рассмотрение.");
+    window.location.href = "my-stats.html";
   } catch (err) {
+    loader.style.display = "none";
     console.error(err);
     alert("❌ Не удалось отправить заявку. Проверь подключение.");
   }
+
+  // ⛔️ важно: стопим стандартную отправку
+  return false;
 });
 
 });
 </script>
+
 
 <!-- Подгрузка меню -->
 <script>
@@ -771,66 +864,59 @@ function validateDateInput(input) {
   });
   validateDateInput(centerDate);
 
-  // === "Охрана в центре" ===
-const centerGuardWrapper = document.createElement("div");
-centerGuardWrapper.className = "guard-select-wrapper";
-const centerGuardDisplay = document.createElement("div");
-centerGuardDisplay.className = "guard-select-display";
-centerGuardDisplay.textContent = "Выберите существо...";
-const centerDropdown = document.createElement("div");
-centerDropdown.className = "guard-dropdown";
-centerGuardWrapper.append(centerGuardDisplay, centerDropdown);
-
-const centerGuardInput = document.querySelector('input[name="centerGuard"]');
-centerGuardInput.replaceWith(centerGuardWrapper);
+// === "Охрана в центре" ===
+const centerGuardDisplay = document.getElementById('centerGuardDisplay');
+const centerGuardDropdown = document.getElementById('centerGuardDropdown');
+const centerGuardInput = document.getElementById('centerGuardInput');
 
 centerGuardDisplay.addEventListener("click", (e) => {
   e.stopPropagation();
   const list = Object.entries(window.guardIcons);
-  centerDropdown.innerHTML = list.map(([name, d]) => `
+  centerGuardDropdown.innerHTML = list.map(([name, d]) => `
     <div class="guard-item" data-name="${name}" title="${name}">
       <img src="${d.icon}" alt="${name}">
     </div>`).join('');
-  centerDropdown.classList.add("show");
+  centerGuardDropdown.classList.add("show");
 });
 
-centerDropdown.addEventListener("click", (e) => {
+centerGuardDropdown.addEventListener("click", (e) => {
   const item = e.target.closest(".guard-item");
   if (!item) return;
   const name = item.dataset.name;
   centerGuardDisplay.innerHTML = `<img src="${guardIcons[name].icon}" alt="${name}"> ${name}`;
-  centerDropdown.classList.remove("show");
+  centerGuardInput.value = name; // ✅ теперь записываем в hidden-input
+  centerGuardDropdown.classList.remove("show");
 });
 
-// === "Кто был у врага на охране?" ===
-const enemyGuardWrapper = document.createElement("div");
-enemyGuardWrapper.className = "guard-select-wrapper";
-const enemyGuardDisplay = document.createElement("div");
-enemyGuardDisplay.className = "guard-select-display";
-enemyGuardDisplay.textContent = "Выберите существо...";
-const enemyDropdown = document.createElement("div");
-enemyDropdown.className = "guard-dropdown";
-enemyGuardWrapper.append(enemyGuardDisplay, enemyDropdown);
-
-const enemyGuardInput = document.querySelector('input[name="enemyGuard"]');
-enemyGuardInput.replaceWith(enemyGuardWrapper);
+// === "Кто был у врага на охране" ===
+const enemyGuardDisplay = document.getElementById('enemyGuardDisplay');
+const enemyGuardDropdown = document.getElementById('enemyGuardDropdown');
+const enemyGuardInput = document.getElementById('enemyGuardInput');
 
 enemyGuardDisplay.addEventListener("click", (e) => {
   e.stopPropagation();
   const list = Object.entries(window.guardIcons);
-  enemyDropdown.innerHTML = list.map(([name, d]) => `
+  enemyGuardDropdown.innerHTML = list.map(([name, d]) => `
     <div class="guard-item" data-name="${name}" title="${name}">
       <img src="${d.icon}" alt="${name}">
     </div>`).join('');
-  enemyDropdown.classList.add("show");
+  enemyGuardDropdown.classList.add("show");
 });
 
-enemyDropdown.addEventListener("click", (e) => {
+enemyGuardDropdown.addEventListener("click", (e) => {
   const item = e.target.closest(".guard-item");
   if (!item) return;
   const name = item.dataset.name;
   enemyGuardDisplay.innerHTML = `<img src="${guardIcons[name].icon}" alt="${name}"> ${name}`;
-  enemyDropdown.classList.remove("show");
+  enemyGuardInput.value = name; // ✅ теперь записываем в hidden-input
+  enemyGuardDropdown.classList.remove("show");
+});
+
+// Закрытие всех выпадашек по клику вне
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".guard-select-wrapper")) {
+    document.querySelectorAll(".guard-dropdown").forEach(el => el.classList.remove("show"));
+  }
 });
 
 // Закрытие всех выпадашек по клику вне
@@ -847,6 +933,39 @@ document.addEventListener("click", (e) => {
 });
 </script>
 
+<!-- === Лоадер === -->
+<div id="loader-overlay" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  font-family: 'Press Start 2P', cursive;
+  color: #ffdd55;
+  text-align: center;
+">
+  <div class="loader" style="
+    border: 6px solid #444;
+    border-top: 6px solid #ffdd55;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  "></div>
+  <p style="margin-top: 20px; font-size: 0.8rem;">Отправляем заявку...</p>
+</div>
+
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
 
 </body>
 </html>
