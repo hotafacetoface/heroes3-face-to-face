@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <!-- JS справочники (как на index.html) -->
+<script src="js/icons-castles.js"></script>
+<script src="js/icons-heroes.js"></script>
+<script src="js/icons-monsters.js"></script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Лицом к лицу — История матчей</title>
+
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- DataTables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+</head>
+<body>
+  <!-- Меню -->
+  <div id="menu-placeholder"></div>
+
+  <!-- Лоадер -->
+  <div class="loader-container" id="loader">
+    <div class="loader-box">
+      <div class="loader-header">Загрузка истории матчей</div>
+      <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+      <div class="loader-text" id="loader-text">0%</div>
+    </div>
+  </div>
+
+  <h1>История матчей</h1>
+
+  <div class="table-responsive">
+    <table id="history-table" class="table">
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Игрок</th>
+          <th>Замок</th>
+          <th>Герой</th>
+          <th>Стек</th>
+          <th>Бонус</th>
+          <th>Цвет</th>
+          <th>Разница</th>
+          <th>Цвет оп.</th>
+          <th>Бонус оп.</th>
+          <th>Стек оп.</th>
+          <th>Герой оп.</th>
+          <th>Замок оп.</th>
+          <th>Оппонент</th>
+          <th>Исход</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Данные будут загружаться сюда -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="debug-info" id="debug-info"></div>
+
+  <script src="js/main.js"></script>
+<script>
+  const HISTORY_API_URL = "https://script.google.com/macros/s/AKfycbyN_b-j0U_p7cqkfC9glBhL_ZwIuseHo0ybUdhy148rnWV19Da6D9K_MHWSxfQHhyGmxA/exec";
+
+  fetch("menu.html")
+    .then(r => r.text())
+    .then(d => {
+      document.getElementById("menu-placeholder").innerHTML = d;
+      if (typeof initMenu === "function") initMenu();
+      if (typeof initMatchHistoryTable === "function") initMatchHistoryTable(HISTORY_API_URL);
+    })
+    .catch(err => console.error("Ошибка загрузки меню:", err));
+</script>
+<script>
+/* === Добавляем флаги к цветам, не трогая main.js === */
+document.addEventListener("DOMContentLoaded", () => {
+  // ждём когда таблица появится
+  const observer = new MutationObserver(() => {
+    const table = document.getElementById("history-table");
+    if (!table) return;
+
+    const rows = table.querySelectorAll("tbody tr");
+    if (rows.length === 0) return;
+
+    for (const tr of rows) {
+      const cells = tr.querySelectorAll("td");
+      if (cells.length < 9) continue;
+
+      const colorCell = cells[6];       // столбец "Цвет"
+      const enemyColorCell = cells[8];  // столбец "Цвет врага"
+
+      const decorate = cell => {
+        const txt = (cell.textContent || "").trim().toLowerCase();
+        if (txt.includes("крас")) cell.textContent = "🟥 " + cell.textContent.trim();
+        else if (txt.includes("син")) cell.textContent = "🟦 " + cell.textContent.trim();
+      };
+
+      decorate(colorCell);
+      decorate(enemyColorCell);
+    }
+
+    observer.disconnect(); // сработало один раз, больше не следим
+  });
+
+  // следим за изменениями в tbody (main.js наполняет таблицу динамически)
+  const target = document.querySelector("#history-table tbody");
+  if (target) observer.observe(target, { childList: true });
+});
+</script>
+
+</body>
+</html>

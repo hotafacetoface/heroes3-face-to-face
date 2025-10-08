@@ -302,7 +302,7 @@ function initMenu() {
         <a href="#" class="menu-item">${authUser}</a>
         <div class="dropdown-menu">
           <a href="my-stats.html">Моя статистика</a>
-          <a href="history.html">История матчей</a>
+          <a href="my-history.html">История матчей</a>
           <a href="match-publish.html" class="dropdown-item">Опубликовать матч</a>
           <a href="#" id="logoutBtn">Выйти</a>
         </div>
@@ -373,3 +373,297 @@ document.addEventListener('DOMContentLoaded', () => {
   // Инициализация меню для всех страниц
   initMenu();
 });
+// === История матчей пользователя ===
+function initHistoryTable() {
+  const loader = document.getElementById("loader");
+  const loaderFill = document.getElementById("loader-fill");
+  const loaderText = document.getElementById("loader-text");
+  const tbody = document.querySelector("#history-table tbody");
+  if (!tbody) return;
+
+  if (loader) loader.style.display = "flex";
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress = Math.min(progress + 15, 90);
+    loaderFill.style.width = progress + "%";
+    loaderText.textContent = Math.floor(progress) + "%";
+  }, 150);
+
+  // --- Фейковые данные (пример) ---
+  const sampleData = Array.from({ length: 25 }).map((_, i) => ({
+    date: `2025-10-${String(i + 1).padStart(2, "0")}`,
+    player: "PlayerOne",
+    castle: "Башня",
+    hero: "Солмир",
+    stack: "Титаны",
+    bonus: "Артефакт",
+    color: i % 2 === 0 ? "Синий" : "Красный",
+    goldDiff: (Math.random() * 5000 - 2500).toFixed(0),
+    enemyColor: i % 2 === 0 ? "Красный" : "Синий",
+    enemyBonus: "Магия",
+    enemyStack: "Черные драконы",
+    enemyHero: "Гелу",
+    enemyCastle: "Замок",
+    result: i % 3 === 0 ? "Победа" : "Поражение"
+  }));
+
+  // --- Заполняем таблицу ---
+const tr = document.createElement("tr");
+tr.className = myOutcome === "Победа" ? "match-win" : "match-lose";
+
+tr.innerHTML = `
+  <td>${formattedDate}</td>
+  <td>${myNick}</td>
+  <td>${icon(castleIcon, myCastle)}</td>
+  <td>${icon(heroIcon, myHero)}</td>
+  <td>${icon(myStackIcon, myStack)}</td>
+  <td>${myBonus}</td>
+  <td>${myColor}</td>
+  <td>${goldDiff}</td>
+  <td>${enemyColor}</td>
+  <td>${enemyBonus}</td>
+  <td>${icon(enemyStackIcon, enemyStack)}</td>
+  <td>${icon(enemyHeroIcon, enemyHero)}</td>
+  <td>${icon(enemyCastleIcon, enemyCastle)}</td>
+  <td>${enemyNick}</td>
+  <td style="color:${myOutcome === "Победа" ? "#00ff80" : "#ff5555"}">${myOutcome}</td>
+`;
+tbody.appendChild(tr);
+
+  // --- DataTables с пейджингом (10 на страницу) ---
+  setTimeout(() => {
+    new DataTable("#history-table", {
+      pageLength: 10,
+      language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
+      lengthChange: false,
+      ordering: true,
+      autoWidth: false,
+      order: [[0, "desc"]]
+    });
+
+    clearInterval(progressInterval);
+    loaderFill.style.width = "100%";
+    loaderText.textContent = "100%";
+    setTimeout(() => loader.style.display = "none", 400);
+  }, 800);
+}
+// === История матчей пользователя ===
+async function initHistoryTable() {
+  const authUser = localStorage.getItem("authUser");
+  if (!authUser) {
+    alert("Пожалуйста, войдите в систему, чтобы просматривать историю матчей.");
+    window.location.href = "login.html";
+    return;
+  }
+
+  const loader = document.getElementById("loader");
+  const loaderFill = document.getElementById("loader-fill");
+  const loaderText = document.getElementById("loader-text");
+  const tbody = document.querySelector("#history-table tbody");
+  if (!tbody) return;
+
+  loader.style.display = "flex";
+  loaderFill.style.width = "0%";
+  loaderText.textContent = "0%";
+
+  try {
+    const response = await fetch(API_URL + "?sheet=Общая статистика");
+    const data = await response.json();
+
+    if (!Array.isArray(data)) throw new Error("Неверный формат данных от сервера");
+
+    const userMatches = data.filter(row =>
+      String(row["Ник игрока"]).trim().toLowerCase() === authUser.toLowerCase() ||
+      String(row["Ник противника"]).trim().toLowerCase() === authUser.toLowerCase()
+    );
+
+    tbody.innerHTML = "";
+
+    if (userMatches.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="15" style="text-align:center">Матчи не найдены</td></tr>`;
+      loader.style.display = "none";
+      return;
+    }
+
+    // Вспомогательная функция для иконки
+    const icon = (src, name, size = 42) =>
+      src ? `<img src="${src}" title="${name}" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle;margin-right:4px;"> ${name}` : name;
+
+    const colorIcon = color => {
+      if (color.toLowerCase().includes("крас")) return "🟥 Красный";
+      if (color.toLowerCase().includes("син")) return "🟦 Синий";
+      return color;
+    };
+
+    // === Перебор всех матчей ===
+    for (const row of userMatches) {
+      const nickPlayer = String(row["Ник игрока"]).trim();
+      const nickEnemy = String(row["Ник противника"]).trim();
+      const isPlayer = nickPlayer.toLowerCase() === authUser.toLowerCase();
+
+      const myNick = authUser;
+      const enemyNick = isPlayer ? nickEnemy : nickPlayer;
+
+      const myCastle = isPlayer ? row["Замок"] : row["Замок противника"];
+      const enemyCastle = isPlayer ? row["Замок противника"] : row["Замок"];
+      const myHero = isPlayer ? row["Стартер"] : row["Стартер противника"];
+      const enemyHero = isPlayer ? row["Стартер противника"] : row["Стартер"];
+      const myStack = isPlayer ? row["Сильнейший стек игрока"] : row["Сильнейший стек противника"];
+      const enemyStack = isPlayer ? row["Сильнейший стек противника"] : row["Сильнейший стек игрока"];
+      const myBonus = isPlayer ? row["Начальный бонус игрока"] : row["Начальный бонус оппонента"];
+      const enemyBonus = isPlayer ? row["Начальный бонус оппонента"] : row["Начальный бонус игрока"];
+
+      let color = String(row["Цвет"] || "");
+      let goldDiff = Number(row["Разница золота"] || 0);
+      if (!isPlayer) {
+        // инвертируем цвет и знак золота
+        color = color.toLowerCase().includes("крас") ? "Синий" : "Красный";
+        goldDiff = -goldDiff;
+      }
+      const myColor = colorIcon(color);
+      const enemyColor = myColor.includes("Красный") ? "🟦 Синий" : "🟥 Красный";
+
+      const outcomeRaw = String(row["Исход"] || "").trim().toLowerCase();
+      const myOutcome = isPlayer
+        ? (outcomeRaw === "победа" ? "Победа" : "Поражение")
+        : (outcomeRaw === "победа" ? "Поражение" : "Победа");
+
+      const dateRaw = String(row["Дата"] || "").trim();
+      let formattedDate = dateRaw;
+      const match = dateRaw.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+      if (match) formattedDate = `${match[3]}.${match[2]}.${match[1]} ${match[4]}:${match[5]}`;
+
+      // Иконки
+      const castleIcon = (window.castleIcons && window.castleIcons[myCastle]) || "";
+      const enemyCastleIcon = (window.castleIcons && window.castleIcons[enemyCastle]) || "";
+      const heroIcon = (window.heroIcons && window.heroIcons[myHero]) || "";
+      const enemyHeroIcon = (window.heroIcons && window.heroIcons[enemyHero]) || "";
+
+      // Подбираем стек иконку
+      const normalize = s => String(s || "").trim().toLowerCase();
+      const myStackKey = normalize(myStack);
+      const enemyStackKey = normalize(enemyStack);
+      const myStackIcon = (window.monsterIcons && window.monsterIcons[myStackKey]?.icon) || "";
+      const enemyStackIcon = (window.monsterIcons && window.monsterIcons[enemyStackKey]?.icon) || "";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${formattedDate}</td>
+        <td>${myNick}</td>
+        <td>${icon(castleIcon, myCastle)}</td>
+        <td>${icon(heroIcon, myHero)}</td>
+        <td>${icon(myStackIcon, myStack)}</td>
+        <td>${myBonus}</td>
+        <td>${myColor}</td>
+        <td>${goldDiff}</td>
+        <td>${enemyColor}</td>
+        <td>${enemyBonus}</td>
+        <td>${icon(enemyStackIcon, enemyStack)}</td>
+        <td>${icon(enemyHeroIcon, enemyHero)}</td>
+        <td>${icon(enemyCastleIcon, enemyCastle)}</td>
+        <td>${enemyNick}</td>
+        <td style="color:${myOutcome === "Победа" ? "#00ff80" : "#ff5555"}">${myOutcome}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    new DataTable("#history-table", {
+      pageLength: 10,
+      language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
+      lengthChange: false,
+      ordering: true,
+      autoWidth: false,
+      order: [[0, "desc"]]
+    });
+
+    loaderFill.style.width = "100%";
+    loaderText.textContent = "100%";
+    setTimeout(() => loader.style.display = "none", 400);
+
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = `<tr><td colspan="15" style="text-align:center">Ошибка загрузки данных</td></tr>`;
+    loader.style.display = "none";
+  }
+}
+// === История матчей (версия без конфликта) ===
+async function initMatchHistoryTable(apiUrl) {
+  const authUser = localStorage.getItem("authUser");
+  if (!authUser) {
+    alert("Пожалуйста, войдите в систему, чтобы просмотреть историю матчей.");
+    window.location.href = "login.html";
+    return;
+  }
+
+  const loader = document.getElementById("loader");
+  const loaderFill = document.getElementById("loader-fill");
+  const loaderText = document.getElementById("loader-text");
+  const tbody = document.querySelector("#history-table tbody");
+  if (!tbody) return;
+
+  loader.style.display = "flex";
+  loaderFill.style.width = "0%";
+  loaderText.textContent = "0%";
+
+  try {
+    const response = await fetch(`${apiUrl}?user=${encodeURIComponent(authUser)}`);
+    const data = await response.json();
+
+    tbody.innerHTML = "";
+    if (!Array.isArray(data) || data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="15" style="text-align:center">Матчи не найдены</td></tr>`;
+      loader.style.display = "none";
+      return;
+    }
+
+    const icon = (src, name, size = 42) =>
+      src ? `<img src="${src}" title="${name}" style="width:${size}px;height:${size}px;vertical-align:middle;margin-right:4px;">${name}` : name;
+
+    for (const row of data) {
+      const castleIcon = (window.castleIcons && window.castleIcons[row.castle]) || "";
+      const enemyCastleIcon = (window.castleIcons && window.castleIcons[row.enemyCastle]) || "";
+      const heroIcon = (window.heroIcons && window.heroIcons[row.hero]) || "";
+      const enemyHeroIcon = (window.heroIcons && window.heroIcons[row.enemyHero]) || "";
+      const myStackIcon = (window.monsterIcons && window.monsterIcons[row.stack?.toLowerCase()]?.icon) || "";
+      const enemyStackIcon = (window.monsterIcons && window.monsterIcons[row.enemyStack?.toLowerCase()]?.icon) || "";
+
+      const tr = document.createElement("tr");
+      tr.className = row.outcome === "Победа" ? "match-win" : "match-lose";
+      tr.innerHTML = `
+        <td>${row.date}</td>
+        <td>${row.player}</td>
+        <td>${icon(castleIcon, row.castle)}</td>
+        <td>${icon(heroIcon, row.hero)}</td>
+        <td>${icon(myStackIcon, row.stack)}</td>
+        <td>${row.bonus}</td>
+        <td>${row.color}</td>
+        <td>${row.goldDiff}</td>
+        <td>${row.enemyColor}</td>
+        <td>${row.enemyBonus}</td>
+        <td>${icon(enemyStackIcon, row.enemyStack)}</td>
+        <td>${icon(enemyHeroIcon, row.enemyHero)}</td>
+        <td>${icon(enemyCastleIcon, row.enemyCastle)}</td>
+        <td>${row.enemyNick}</td>
+        <td style="color:${row.outcome === "Победа" ? "#00ff80" : "#ff5555"}">${row.outcome}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    new DataTable("#history-table", {
+      pageLength: 10,
+      language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
+      lengthChange: false,
+      order: [[0, "desc"]],
+      autoWidth: false
+    });
+
+    loaderFill.style.width = "100%";
+    loaderText.textContent = "100%";
+    setTimeout(() => loader.style.display = "none", 400);
+
+  } catch (err) {
+    console.error("Ошибка истории:", err);
+    tbody.innerHTML = `<tr><td colspan="15" style="text-align:center">Ошибка загрузки</td></tr>`;
+    loader.style.display = "none";
+  }
+}
