@@ -134,8 +134,9 @@
       (data.values || []).forEach(row => {
         const nickPlayer = safe(row.nickPlayer);
         const nickEnemy = safe(row.nickEnemy);
-        const isPlayer = nickPlayer === username;
-        const isEnemy = nickEnemy === username;
+const isPlayer = nickPlayer.toLowerCase() === username.toLowerCase();
+const isEnemy  = nickEnemy.toLowerCase() === username.toLowerCase();
+
         if (!isPlayer && !isEnemy) return;
 
         const castle = isPlayer ? safe(row.castlePlayer) : safe(row.castleEnemy);

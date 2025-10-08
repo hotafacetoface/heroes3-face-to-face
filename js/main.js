@@ -432,6 +432,10 @@ tbody.appendChild(tr);
 
   // --- DataTables с пейджингом (10 на страницу) ---
   setTimeout(() => {
+    // === поддержка сортировки даты DD.MM.YYYY HH:mm:ss ===
+if ($.fn.dataTable && $.fn.dataTable.moment) {
+  $.fn.dataTable.moment("DD.MM.YYYY HH:mm:ss");
+}
     new DataTable("#history-table", {
       pageLength: 10,
       language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
@@ -529,9 +533,13 @@ async function initHistoryTable() {
         : (outcomeRaw === "победа" ? "Поражение" : "Победа");
 
       const dateRaw = String(row["Дата"] || "").trim();
-      let formattedDate = dateRaw;
-      const match = dateRaw.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
-      if (match) formattedDate = `${match[3]}.${match[2]}.${match[1]} ${match[4]}:${match[5]}`;
+let formattedDate = dateRaw;
+
+// ISO -> DD.MM.YYYY HH:mm:ss (секунды добавляем, если их нет)
+const m = dateRaw.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+if (m) {
+  formattedDate = `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}:${m[6] || "00"}`;
+}
 
       // Иконки
       const castleIcon = (window.castleIcons && window.castleIcons[myCastle]) || "";
@@ -565,16 +573,40 @@ async function initHistoryTable() {
         <td style="color:${myOutcome === "Победа" ? "#00ff80" : "#ff5555"}">${myOutcome}</td>
       `;
       tbody.appendChild(tr);
-    }
+      // === поддержка сортировки даты DD.MM.YYYY HH:mm:ss ===
 
-    new DataTable("#history-table", {
-      pageLength: 10,
-      language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
-      lengthChange: false,
-      ordering: true,
-      autoWidth: false,
-      order: [[0, "desc"]]
-    });
+    }
+// Регистрация формата даты для сортировки (один раз)
+if ($.fn.dataTable && $.fn.dataTable.moment) {
+  $.fn.dataTable.moment("DD.MM.YYYY HH:mm:ss");
+}
+
+// Инициализация таблицы (jQuery-API, чтобы плагин гарантированно сработал)
+$('#history-table').DataTable({
+  pageLength: 10,
+  language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
+  lengthChange: false,
+  ordering: true,
+  order: [[0, 'desc']],                 // последние матчи сверху
+  columnDefs: [{ targets: 0, type: 'datetime-moment' }],
+  autoWidth: false
+});
+
+new DataTable("#history-table", {
+  pageLength: 10,
+  language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
+  lengthChange: false,
+  ordering: true,
+  order: [[0, "desc"]], // сортировка по столбцу Дата (новые сверху)
+  columnDefs: [
+    {
+      targets: 0, // первый столбец — Дата
+      type: "datetime-moment"
+    }
+  ],
+  autoWidth: false
+});
+
 
     loaderFill.style.width = "100%";
     loaderText.textContent = "100%";
@@ -586,6 +618,38 @@ async function initHistoryTable() {
     loader.style.display = "none";
   }
 }
+// === Преобразует строку даты "07.10.2025 15:02:00" → timestamp (UTC) ===
+function tsFromDateString(s) {
+  s = String(s || "").trim();
+  let m;
+
+  // DD.MM.YYYY HH:mm[:ss]
+  m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (m) {
+    const [, dd, mm, yyyy, HH, MM, SS] = m;
+    return Date.UTC(+yyyy, +mm - 1, +dd, +HH, +MM, +(SS || 0));
+  }
+
+  // DD.MM.YY HH:mm[:ss]  → 20YY
+  m = s.match(/^(\d{2})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (m) {
+    const [, dd, mm, yy, HH, MM, SS] = m;
+    const yyyy = 2000 + +yy;
+    return Date.UTC(+yyyy, +mm - 1, +dd, +HH, +MM, +(SS || 0));
+  }
+
+  // ISO: YYYY-MM-DD[ T]HH:mm[:ss]
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (m) {
+    const [, yyyy, mm, dd, HH, MM, SS] = m;
+    return Date.UTC(+yyyy, +mm - 1, +dd, +HH, +MM, +(SS || 0));
+  }
+
+  // запасной вариант
+  const t = Date.parse(s);
+  return Number.isFinite(t) ? t : 0;
+}
+
 // === История матчей (версия без конфликта) ===
 async function initMatchHistoryTable(apiUrl) {
   const authUser = localStorage.getItem("authUser");
@@ -630,7 +694,7 @@ async function initMatchHistoryTable(apiUrl) {
       const tr = document.createElement("tr");
       tr.className = row.outcome === "Победа" ? "match-win" : "match-lose";
       tr.innerHTML = `
-        <td>${row.date}</td>
+        <td data-order="${tsFromDateString(row.date)}">${row.date}</td>
         <td>${row.player}</td>
         <td>${icon(castleIcon, row.castle)}</td>
         <td>${icon(heroIcon, row.hero)}</td>
