@@ -112,6 +112,32 @@ document.addEventListener("DOMContentLoaded", () => {
   if (target) observer.observe(target, { childList: true });
 });
 </script>
+<script>
+  // Превращаем ячейки "Противник" (14-й столбец) в ссылки на stats-player.html
+  (function linkifyOpponents(){
+    const table = document.getElementById('history-table');
+    if (!table) return;
 
+    // Оборачиваем текст в <a> в уже готовых строках
+    function process() {
+      const rows = table.querySelectorAll('tbody tr');
+      rows.forEach(tr => {
+        const cell = tr.children[13]; // 14-й столбец (индекс 13)
+        if (!cell || cell.dataset.linkified === '1') return;
+        const name = (cell.textContent || '').trim();
+        if (!name) return;
+        cell.innerHTML = `<a href="stats-player.html?user=${encodeURIComponent(name)}" class="enemy-link">${name}</a>`;
+        cell.dataset.linkified = '1';
+      });
+    }
+
+    // Первичный проход
+    process();
+
+    // Следим за изменениями таблицы (пейджинг/сортировка DataTables)
+    const mo = new MutationObserver(process);
+    mo.observe(table.tBodies[0], { childList: true, subtree: true });
+  })();
+</script>
 </body>
 </html>

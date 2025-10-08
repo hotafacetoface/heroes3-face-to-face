@@ -643,7 +643,7 @@ async function initMatchHistoryTable(apiUrl) {
         <td>${icon(enemyStackIcon, row.enemyStack)}</td>
         <td>${icon(enemyHeroIcon, row.enemyHero)}</td>
         <td>${icon(enemyCastleIcon, row.enemyCastle)}</td>
-        <td>${row.enemyNick}</td>
+        <td><a href="stats-player.html?user=${encodeURIComponent(row.enemyNick)}" class="enemy-link">${row.enemyNick}</a></td>
         <td style="color:${row.outcome === "Победа" ? "#00ff80" : "#ff5555"}">${row.outcome}</td>
       `;
       tbody.appendChild(tr);
