@@ -1,256 +1,134 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Регистрация — Лицом к лицу</title>
   <link rel="stylesheet" href="css/style.css">
-
-  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
-  <!-- v2.2 — bcrypt.js подключён локально -->
+  <!-- bcrypt -->
   <script src="js/bcrypt.min.js"></script>
-  <script>
-    if (typeof dcodeIO !== "undefined" && dcodeIO.bcrypt) {
-      window.bcrypt = dcodeIO.bcrypt;
-    }
-  </script>
+  <script>if (typeof dcodeIO !== "undefined" && dcodeIO.bcrypt) window.bcrypt = dcodeIO.bcrypt;</script>
 
   <style>
-    * {
-      margin: 0; padding: 0; box-sizing: border-box;
-      font-family: 'Press Start 2P', cursive;
-      color: #e0d0a0;
-      text-shadow: 1px 1px 2px #000;
-      letter-spacing: 1px;
-      font-size: 0.75rem;
-    }
-    body {
-      background: url('https://i.postimg.cc/qv2pzHrV/image.gif') no-repeat center center fixed;
-      background-size: cover;
-      min-height: 100vh;
-      padding: 15px;
-      background-color: #0a0a1a;
-    }
-    .container {
-      background-color: rgba(0, 15, 50, 0.1);
-      border: 3px solid #6e4f1a;
-      border-radius: 8px;
-      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.7),
-                  0 0 15px rgba(200, 150, 50, 0.4);
-      padding: 20px;
-      margin: 40px auto;
-      max-width: 500px;
-      width: 100%;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 15px;
-      font-size: 1.1rem;
-      color: #ffdd55;
-      text-shadow: 0 2px 4px #000, 0 0 10px rgba(255, 255, 0, 0.7);
-      text-transform: uppercase;
-      background: linear-gradient(to right, #e0b050, #ffdd55);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: pulse 2s infinite alternate;
-    }
-    @keyframes pulse {
-      from { text-shadow: 0 2px 4px #000, 0 0 10px rgba(255, 255, 0, 0.7); }
-      to   { text-shadow: 0 2px 8px #000, 0 0 20px rgba(255, 255, 0, 0.9); }
-    }
-    .form-group { margin-bottom: 15px; }
-    input {
-      width: 100%; padding: 8px;
-      border: 1px solid #6e4f1a;
-      border-radius: 4px;
-      background: #0a0a1a;
-      color: #e0d0a0;
-      text-shadow: 1px 1px 2px #000;
-    }
-    button {
-      width: 100%; padding: 10px;
-      background: linear-gradient(to right, #e0b050, #ffdd55);
-      color: #000; border: none; border-radius: 4px;
-      cursor: pointer; font-weight: bold;
-      text-shadow: 0 0 3px #fff;
-      box-shadow: 0 0 5px rgba(255, 220, 100, 0.6);
-      transition: all 0.2s ease;
-    }
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 0 10px rgba(255, 220, 100, 0.8);
-    }
-    #regResult {
-      margin-top: 15px; padding: 10px;
-      border-radius: 4px; text-align: center;
-      font-weight: bold;
-    }
-    #regResult.success { background: rgba(0, 20, 60, 0.8); color: #00ff00; }
-    #regResult.error   { background: rgba(200, 0, 0, 0.8); color: #ff0000; }
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Press Start 2P',cursive;color:#e0d0a0;text-shadow:1px 1px 2px #000;font-size:.75rem}
+    body{background:url('https://i.postimg.cc/qv2pzHrV/image.gif') no-repeat center fixed;background-size:cover;min-height:100vh;padding:15px;background-color:#0a0a1a}
+    .container{background:rgba(0,15,50,.1);border:3px solid #6e4f1a;border-radius:8px;box-shadow:inset 0 0 20px rgba(0,0,0,.7),0 0 15px rgba(200,150,50,.4);padding:20px;margin:40px auto;max-width:500px;width:100%}
+    h2{text-align:center;margin-bottom:15px;font-size:1.1rem;color:#ffdd55}
+    input{width:100%;padding:8px;border:1px solid #6e4f1a;border-radius:4px;background:#0a0a1a;color:#e0d0a0;margin-bottom:12px}
+    button{width:100%;padding:10px;background:linear-gradient(to right,#e0b050,#ffdd55);color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:bold;text-shadow:0 0 3px #fff;box-shadow:0 0 5px rgba(255,220,100,.6);transition:.2s}
+    button:hover{transform:translateY(-2px);box-shadow:0 0 10px rgba(255,220,100,.8)}
+    #result{margin-top:15px;text-align:center;font-weight:bold;border-radius:4px;padding:10px}
+    #result.success{background:rgba(0,20,60,.8);color:#00ff00}
+    #result.error{background:rgba(120,0,0,.8);color:#ff5555}
   </style>
 </head>
 <body>
   <!-- Меню -->
   <div id="menu-container"></div>
   <script>
-    fetch("menu.html")
-      .then(r => r.text())
-      .then(d => { document.getElementById("menu-container").innerHTML = d; if (typeof initMenu==="function") initMenu(); });
+    fetch("menu.html").then(r=>r.text()).then(d=>{
+      document.getElementById("menu-container").innerHTML=d;
+      if (typeof initMenu==="function") initMenu();
+    });
   </script>
 
-  <!-- Контейнер -->
   <div class="container">
     <h2>Регистрация</h2>
-    <form id="regForm">
-      <div class="form-group">
-  <input type="text" name="username" id="username" placeholder="Игровой ник" required>
-  <small id="usernameHint" style="display:none; margin-top:5px; color:#0a7400; font-size:0.75rem;">
-    Подсказка: Убедитесь, что введённый игровой ник идентичен нику из лобби HotA!
-  </small>
-</div>
-      <div class="form-group">
-        <input type="email" name="email" placeholder="Email" required>
-      </div>
-      <div class="form-group">
-        <input type="password" name="password" placeholder="Пароль" required>
-      </div>
-      <button type="submit" id="registerBtn" class="btn-submit">Зарегистрироваться</button>
+    <form id="registerForm" novalidate>
+      <input type="text" id="username" name="username" placeholder="Ваш ник" required>
+      <input type="email" id="email" name="email" placeholder="Почта" required>
+      <input type="password" id="password" name="password" placeholder="Пароль (мин. 7 латиница/цифры)" required>
+      <button type="submit" id="registerBtn">Зарегистрироваться</button>
     </form>
-    <div id="regResult"></div>
+    <div id="result"></div>
   </div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyaCYqt6YwtRZsU4RplfWxjJEDTA4ezGEenQApP2j1B7v8NhezNIWhZ9aldOu8i_4tURQ/exec";
-document.getElementById("regForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const username = form.username.value.trim();
-  const email = form.email.value.trim();
-  const password = form.password.value;
-  const resultEl = document.getElementById("regResult");
-  const submitBtn = document.getElementById("registerBtn");
-  submitBtn.disabled = true; // блокируем кнопку сразу
-  // basic presence
-  if (!username || !email || !password) {
-    resultEl.textContent = "Заполните все поля.";
-    resultEl.className = "error";
-    return;
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyERHepUMcL18tc_T2VmGczMTU-XNmBp9gmh9YMTf0GKgg3Kmctfm6pPMMWXe5LWt2jqg/exec";
+
+  // Универсальный парсер GAS-ответов: JSON, JSONP (callback(...)), XSSI (")]}')
+  async function gasFetchJSON(url, options={}) {
+    const resp = await fetch(url, options);
+    let text = await resp.text();
+
+    // срез XSSI-префикса
+    text = text.replace(/^\)\]\}',?\s*\n?/, '').trim();
+
+    // распаковка JSONP: callback( ... );
+    const m = text.match(/^[a-zA-Z_$][\w$]*\s*\(\s*([\s\S]*?)\s*\)\s*;?\s*$/);
+    if (m) text = m[1];
+
+    return JSON.parse(text);
   }
 
-  // 1) username: only latin letters/digits/underscore, min 3
-  if (!/^[A-Za-z0-9_]{3,}$/.test(username)) {
-    resultEl.textContent = "❌ Ник должен содержать минимум 3 латинских символа (A-Z, 0-9, _).";
-    resultEl.className = "error";
-    return;
-  }
+  const form = document.getElementById("registerForm");
+  const resultEl = document.getElementById("result");
+  const btn = document.getElementById("registerBtn");
 
-  // 2) email: basic validation (allow .com/.ru/... 2+ letters tld)
-  if (!/^[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(email)) {
-    resultEl.textContent = "❌ Введите корректный email (пример: user@mail.com).";
-    resultEl.className = "error";
-    return;
-  }
+  form.addEventListener("submit", onSubmit);
 
-  // 3) password: min 10 chars, only latin letters/digits, at least one digit
-  if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{10,}$/.test(password)) {
-    showMessage("Пароль должен быть минимум 10 символов, содержать только латиницу и хотя бы одну цифру.", "error");
-    return;
-  }
+  async function onSubmit(e){
+    e.preventDefault();
+    btn.disabled = true;
+    show("⏳ Проверяем данные...","");
 
-  // 4) remote uniqueness checks (username & email)
-  try {
-    resultEl.textContent = "⏳ Проверка уникальности...";
-    resultEl.className = "";
+    const username = form.username.value.trim();
+    const email    = form.email.value.trim();
+    const password = form.password.value.trim();
 
-    // check username
-    let resp = await fetch(APPS_SCRIPT_URL + "?checkUser=" + encodeURIComponent(username));
-    let json = await resp.json();
-    if (json.exists) {
-      resultEl.textContent = "❌ Пользователь с таким ником уже создан.";
-      resultEl.className = "error";
+    if (!username || !email || !password) { show("❌ Заполните все поля.", "error"); btn.disabled=false; return; }
+
+    // Локальные проверки
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passPattern  = /^[A-Za-z0-9]{7,}$/;
+    if (!emailPattern.test(email)) { show("❌ Введите корректный e-mail.", "error"); btn.disabled=false; return; }
+    if (!passPattern.test(password)) { show("❌ Пароль ≥7, только латиница и цифры.", "error"); btn.disabled=false; return; }
+
+    // 1) Проверка уникальности через GET (JSONP-safe)
+    try {
+      const userData  = await gasFetchJSON(`${APPS_SCRIPT_URL}?checkUser=${encodeURIComponent(username)}`);
+      if (userData.exists) { show("❌ Такой ник уже используется.", "error"); btn.disabled=false; return; }
+
+      const mailData  = await gasFetchJSON(`${APPS_SCRIPT_URL}?checkEmail=${encodeURIComponent(email)}`);
+      if (mailData.exists) { show("❌ Такая почта уже зарегистрирована.", "error"); btn.disabled=false; return; }
+    } catch (err) {
+      console.error("GET check error:", err);
+      show("❌ Ошибка проверки уникальности. Попробуйте позже.", "error");
+      btn.disabled=false;
       return;
     }
 
-    // check email
-    resp = await fetch(APPS_SCRIPT_URL + "?checkEmail=" + encodeURIComponent(email));
-    json = await resp.json();
-    if (json.exists) {
-      resultEl.textContent = "❌ Пользователь с таким email уже создан.";
-      resultEl.className = "error";
-      return;
-    }
-
-  } catch (err) {
-    console.error("Ошибка проверки уникальности:", err);
-    resultEl.textContent = "❌ Не удалось проверить уникальность (сеть). Попробуйте позже.";
-    resultEl.className = "error";
-    return;
-  }
-
-// proceed: hash password and POST
+// 2) Всё чисто — шлём POST (no-cors), urlencoded -> e.parameter на GAS
 try {
-  resultEl.textContent = "⏳ Хэшируем пароль...";
-  resultEl.className = "";
+  show("🔐 Хэшируем пароль...", "");
+  const passwordHash = bcrypt.hashSync(password, 10);
 
-  const salt = bcrypt.genSaltSync(12); // повышаем cost
-  const passwordHash = bcrypt.hashSync(password, salt);
+  // вместо FormData используем URLSearchParams (чтобы e.parameter на бэке точно заполнился)
+  const body = new URLSearchParams({
+    username,
+    email,
+    passwordHash
+  });
 
-  const formData = new URLSearchParams();
-  formData.append("username", username);
-  formData.append("email", email);
-  formData.append("passwordHash", passwordHash);
+  await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: body
+  });
 
-  resultEl.textContent = "⏳ Отправка...";
-
-  const postResp = await fetch(APPS_SCRIPT_URL, { method: "POST", body: formData });
-  const postJson = await postResp.json();
-
-  if (postJson && postJson.result === "success") {
-    resultEl.textContent = "✅ Регистрация успешна!";
-    resultEl.className = "success";
-    form.reset();
-  } else {
-    const msg = (postJson && postJson.message) ? postJson.message : "Ошибка при регистрации";
-    if (msg === "username_exists") {
-      resultEl.textContent = "❌ Пользователь с таким ником уже создан.";
-    } else if (msg === "email_exists") {
-      resultEl.textContent = "❌ Пользователь с таким email уже создан.";
-    } else {
-      resultEl.textContent = "❌ " + msg;
-    }
-    resultEl.className = "error";
-  }
-
+  show("✅ Регистрация успешна!", "success");
+  form.reset();
 } catch (err) {
-  console.error("Ошибка отправки:", err);
-  resultEl.textContent = "❌ Ошибка соединения при отправке. Попробуйте позже.";
-  resultEl.className = "error";
-
+  console.error("POST error:", err);
+  show("❌ Ошибка сети. Попробуйте позже.", "error");
 } finally {
-  // разблокировать кнопку через 3 секунды
-  setTimeout(() => {
-    submitBtn.disabled = false;
-  }, 3000);
+  setTimeout(() => (btn.disabled = false), 2000);
 }
-});
-</script>
-<script>
-// Подсказка для игрового ника
-const usernameInput = document.getElementById("username");
-const usernameHint = document.getElementById("usernameHint");
-
-usernameInput.addEventListener("focus", () => {
-  usernameHint.style.display = "block";
-});
-
-usernameInput.addEventListener("blur", () => {
-  if (usernameInput.value.trim() === "") {
-    usernameHint.style.display = "none";
   }
-});
-</script>
-</body>
 
+  function show(text, type){ resultEl.textContent=text; resultEl.className=type; }
+  </script>
+</body>
 </html>
