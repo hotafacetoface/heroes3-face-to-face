@@ -83,11 +83,23 @@
   <div class="loader"></div>
 </div>
   <script>
-// ✅ Надёжное определение ника, чтобы работало и при JSONP-вызовах
+// ✅ Универсальное определение ника
 const params = new URLSearchParams(location.search);
-const username = params.get("user") || window.viewedUser || localStorage.getItem("authUser");
-window.viewedUser = username; // сохраняем глобально
+let username = params.get("user")?.trim() || window.viewedUser || localStorage.getItem("authUser");
+
+// ✅ фикс для JSONP: сохраняем глобально при любом варианте
+if (username) window.viewedUser = username;
+
+
+// если всё ещё пусто — выходим
 if (!username) window.location.href = "login.html";
+// ✅ Гарантируем, что при прямом открытии страницы данные не теряются
+window.addEventListener("DOMContentLoaded", () => {
+  if (!window.viewedUser && username) {
+    window.viewedUser = username;
+  }
+});
+
 
     async function fetchUserStats(username) {
       const url = "https://script.google.com/macros/s/AKfycbyFBd0h8ErXgmA16lByhsvOgVAJ-7zFkspg1t8TuK1hS0AVr4ACizgINDNR7thG4gcgag/exec?username=" + encodeURIComponent(username);
@@ -462,6 +474,8 @@ let castleStatsLoaded = false;
 
 // === Новый метод загрузки статистики по замкам (через getGeneralStats) ===
 async function loadCastleStats(username) {
+    // гарантируем, что username не теряется
+  username = username || window.viewedUser || localStorage.getItem("authUser");
   const tabLoader = document.getElementById("tab-loader");
   const content = document.getElementById("castle-content");
 
@@ -472,8 +486,11 @@ async function loadCastleStats(username) {
 
   try {
     // Получаем все матчи игрока
-    const jsonpData = await jsonpRequest(`${scriptUrl}?action=getGeneralStats&player=${encodeURIComponent(username)}`, 10000);
-    const matches = jsonpData?.values || [];
+    const jsonpData = await jsonpRequest(`${scriptUrl}?action=getGeneralStats&username=${encodeURIComponent(username)}`, 10000);
+    const matches = Array.isArray(jsonpData)
+  ? jsonpData
+  : (jsonpData?.values || []);
+
     if (!matches.length) throw new Error("Нет данных");
 
     // === Подготовка структур ===
@@ -491,8 +508,8 @@ async function loadCastleStats(username) {
     matches.forEach(row => {
       const player = row.nickPlayer;
       const enemy = row.nickEnemy;
-      const isPlayer = player === username;
-      const isEnemy = enemy === username;
+const isPlayer = (player || "").toLowerCase() === (username || "").toLowerCase();
+const isEnemy  = (enemy  || "").toLowerCase() === (username || "").toLowerCase();
       if (!isPlayer && !isEnemy) return;
 
       const castle = isPlayer ? row.castlePlayer : row.castleEnemy;
@@ -571,8 +588,9 @@ if (stats[oppCastle]) {
 const castlesAgainst = {};
 
 matches.forEach(row => {
-  const isPlayer = row.nickPlayer === username;
-  const isEnemy  = row.nickEnemy  === username;
+const isPlayer = (row.nickPlayer || "").toLowerCase() === (username || "").toLowerCase();
+const isEnemy  = (row.nickEnemy  || "").toLowerCase() === (username || "").toLowerCase();
+
   if (!isPlayer && !isEnemy) return;
 
   const myResult = row.result;
@@ -604,8 +622,8 @@ if (hardestCastle) {
   // Находим юнитов, которые чаще всего побеждали игрока при играх против этого замка
   const lossesUnits = {};
   matches.forEach(row => {
-    const isPlayer = row.nickPlayer === username;
-    const isEnemy  = row.nickEnemy === username;
+const isPlayer = (row.nickPlayer || "").toLowerCase() === (username || "").toLowerCase();
+const isEnemy  = (row.nickEnemy  || "").toLowerCase() === (username || "").toLowerCase();
     const lostTo =
       (isPlayer && row.castleEnemy === hardestCastle.name && row.result === "Поражение") ||
       (isEnemy && row.castlePlayer === hardestCastle.name && row.result === "Победа");
@@ -754,6 +772,7 @@ if (g) g.style.color = "";
 let heroStatsLoaded = false;
 
 async function loadHeroStats(username) {
+      username = username || window.viewedUser || localStorage.getItem("authUser");
   const tabLoader = document.getElementById("tab-loader");
   const content = document.getElementById("hero-content");
 
@@ -763,8 +782,11 @@ async function loadHeroStats(username) {
   const scriptUrl = "https://script.google.com/macros/s/AKfycbwus43_mJRl-50ygI8lbGiJDtmwDPS0HtkaxDCfIMqnSs9TzvYB4Ic1nhejEaDncYASRw/exec";
 
   try {
-    const jsonpData = await jsonpRequest(`${scriptUrl}?action=getGeneralStats&player=${encodeURIComponent(username)}`, 10000);
-    const matches = jsonpData?.values || [];
+    const jsonpData = await jsonpRequest(`${scriptUrl}?action=getGeneralStats&username=${encodeURIComponent(username)}`, 10000);
+    const matches = Array.isArray(jsonpData)
+  ? jsonpData
+  : (jsonpData?.values || []);
+
     if (!matches.length) throw new Error("Нет данных");
 
 // Две независимые карты: мои герои и герои соперника против меня
@@ -772,8 +794,9 @@ const my = {};
 const vs = {};
 
 matches.forEach(row => {
-  const isPlayer = row.nickPlayer === username;
-  const isEnemy  = row.nickEnemy  === username;
+const isPlayer = (row.nickPlayer || "").toLowerCase() === (username || "").toLowerCase();
+const isEnemy  = (row.nickEnemy  || "").toLowerCase() === (username || "").toLowerCase();
+
   if (!isPlayer && !isEnemy) return;
 
   const result   = row.result;
@@ -940,7 +963,11 @@ function fillHeroNoData(prefix) {
   });
 }
 
-    initMyStats();
+window.addEventListener("DOMContentLoaded", () => {
+  // Гарантируем, что DOM готов, и все id-элементы существуют
+  setTimeout(() => initMyStats(), 50);
+});
+
     /* =====================================
      ЗАГРУЗКА И ПОСТРОЕНИЕ ГРАФИКА ЭЛО
   ===================================== */
@@ -987,11 +1014,19 @@ function fillHeroNoData(prefix) {
         script.remove();
       }
 
-      window[cbName] = (payload) => {
-        window[cbName].username = username; // 💡 сохраняем ник в область видимости
-        cleanup();
-        resolve(payload);
-      };
+window[cbName] = (payload) => {
+  try {
+    // 💡 фикс: сохраняем username при любом ответе
+    if (username) window.viewedUser = username;
+    resolve(payload);
+  } catch (err) {
+    console.error("JSONP callback error:", err);
+    reject(err);
+  } finally {
+    cleanup();
+  }
+};
+
 
       script.onerror = () => {
         cleanup();
