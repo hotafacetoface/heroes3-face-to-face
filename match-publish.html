@@ -169,11 +169,11 @@ document.addEventListener("DOMContentLoaded", () => {
     <legend>Основная информация</legend>
     <div class="row">
       <div>
-        <label>Разница золота</label>
+        <label>Разница золота <span class="required">*</span></label>
         <input type="number" name="goldDiff" min="-10000" max="10000" value="0" required>
       </div>
       <div>
-        <label>Цвет</label>
+        <label>Цвет <span class="required">*</span></label>
         <select name="color" required>
           <option value="">Выберите...</option>
           <option value="Красный">🟥 Красный</option>
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </select>
       </div>
       <div>
-        <label>Исход</label>
+        <label>Исход <span class="required">*</span></label>
         <select name="result" required>
           <option value="">Выберите...</option>
           <option value="Победа">🏆 Победа</option>
@@ -196,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <legend>Замки и герои</legend>
     <div class="row">
 <div>
-  <label>Ваш замок</label>
+  <label>Ваш замок <span class="required">*</span></label>
   <div class="castle-select-wrapper">
     <div class="castle-select-display" id="castleDisplay" title="Выберите замок">Выберите замок...</div>
     <input type="hidden" name="castle" id="castleInput" required>
@@ -205,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </div>
 
 <div>
-  <label>Замок противника</label>
+  <label>Замок противника <span class="required">*</span></label>
   <div class="castle-select-wrapper">
     <div class="castle-select-display" id="enemyCastleDisplay" title="Выберите замок противника">Выберите замок...</div>
     <input type="hidden" name="enemyCastle" id="enemyCastleInput" required>
@@ -214,17 +214,17 @@ document.addEventListener("DOMContentLoaded", () => {
 </div>
 
 <div>
-  <label>Ник противника</label>
+  <label>Ник противника <span class="required">*</span></label>
   <input type="text" name="enemyNick" placeholder="Введите ник" required>
 </div>
 
 <div>
-  <label>Ваш основной герой</label>
+  <label>Ваш основной герой <span class="required">*</span></label>
   <input type="text" name="starter" placeholder="Имя героя" required>
 </div>
 
 <div>
-  <label>Основной герой противника</label>
+  <label>Основной герой противника <span class="required">*</span></label>
   <input type="text" name="enemyStarter" placeholder="Имя героя" required>
 </div>
 
@@ -256,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <!-- Начальный бонус игрока -->
     <div>
       <label>Начальный бонус игрока</label>
-      <select name="bonusPlayer" required>
+      <select name="bonusPlayer">
         <option value="">Выберите...</option>
         <option value="Случайно">🎲 Случайно</option>
         <option value="Артефакт">🗡️ Артефакт</option>
@@ -268,7 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <!-- Начальный бонус оппонента -->
     <div>
       <label>Начальный бонус оппонента</label>
-      <select name="bonusEnemy" required>
+      <select name="bonusEnemy">
         <option value="">Выберите...</option>
         <option value="Случайно">🎲 Случайно</option>
         <option value="Артефакт">🗡️ Артефакт</option>
@@ -280,7 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <!-- Финальный бой -->
     <div>
       <label>Состоялся ли финальный бой?</label>
-      <select name="finalBattle" id="finalBattle" required>
+      <select name="finalBattle" id="finalBattle">
         <option value="">Выберите...</option>
         <option value="Да">Да</option>
         <option value="Нет">Нет</option>
@@ -359,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div><label>Конец игры</label><input type="text" name="gameEnd"></div>
       <div>
   <label>Уровень экономики</label>
-  <select name="ecoLevel" required>
+  <select name="ecoLevel">
     <option value="">Выберите...</option>
     <option value="Управа">🏠 Управа</option>
     <option value="Префектура">🏛️ Префектура</option>
@@ -370,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <div>
   <label>Уровень ГМ</label>
-  <select name="gmLevel" required>
+  <select name="gmLevel">
     <option value="">Выберите...</option>
     <option value="1">1</option>
     <option value="2">2</option>
@@ -412,6 +412,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  // Проверка обязательных полей
+  const requiredFields = [
+    'input[name="goldDiff"]',
+    'select[name="color"]',
+    'select[name="result"]',
+    'input[name="castle"]',
+    'input[name="enemyCastle"]',
+    'input[name="enemyNick"]',
+    'input[name="starter"]',
+    'input[name="enemyStarter"]'
+  ];
+
+  let allValid = true;
+  requiredFields.forEach(selector => {
+    const field = document.querySelector(selector);
+    if (!field || !field.value.trim()) {
+      allValid = false;
+      field.style.borderColor = '#ff5555';
+      field.style.boxShadow = '0 0 5px rgba(255, 85, 85, 0.6)';
+    } else {
+      field.style.borderColor = '#805020';
+      field.style.boxShadow = 'none';
+    }
+  });
+
+  if (!allValid) {
+    alert('⚠️ Пожалуйста, заполните все обязательные поля, отмеченные *');
+    return;
+  }
 
   const data = Object.fromEntries(new FormData(form).entries());
   const payload = JSON.stringify(data);
@@ -419,15 +448,17 @@ form.addEventListener("submit", async (e) => {
   try {
     loader.style.display = "flex"; // показать лоадер
 
-    // Отправляем POST без CORS
-    await fetch(
-      "https://script.google.com/macros/s/AKfycbxHebt_KTixVszF13fZW3arJATr_E1_a8KQcXyhh1hGGoPN0kcH4WHxlAuS0BPSZSTRwA/exec?t=" + Date.now(),
-      {
-        method: "POST",
-        mode: "no-cors",
-        body: payload
-      }
-    );
+const params = new URLSearchParams(data);
+
+await fetch(
+  "https://script.google.com/macros/s/AKfycbzTLC-vNiA9TsgQR6VtGipQDGh51DLD79O_M0yDx9uwUq6sRnVvrUbniaX9qyyAosQa6w/exec",
+  {
+    method: "POST",
+    mode: "no-cors",
+    body: new URLSearchParams(data)   // ✅ именно так же, как в регистрации
+  }
+);
+
 
     loader.style.display = "none";
     form.reset();
@@ -965,6 +996,14 @@ document.addEventListener("click", (e) => {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+.required {
+  color: #ff5555;
+}
+input:invalid, select:invalid {
+  border-color: #ff5555;
+  box-shadow: 0 0 5px rgba(255, 85, 85, 0.6);
+}
+
 </style>
 
 </body>
