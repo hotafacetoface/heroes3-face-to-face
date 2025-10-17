@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Лицом к лицу — Текущая мета</title>
+
+<link rel="icon" type="image/png" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="js/icons-castles.js"></script>
+
+<style>
+/* === ОСНОВНОЙ БЛОК === */
+body {
+  background-color: #0d0d0d;
+  font-family: 'Press Start 2P', monospace;
+  color: #fff;
+  text-align: center;
+  margin: 0;
+  overflow: hidden;
+}
+
+h1 {
+  margin: 8px 0 6px 0;
+  font-size: 14px;
+  text-shadow: 0 0 8px gold;
+}
+
+/* === КОНТЕЙНЕР ВСЕХ ТИРОВ === */
+#tiers-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 94%;
+  margin: 0 auto;
+  height: calc(100vh - 60px);
+  gap: 10px; /* немного воздуха между блоками */
+}
+
+/* === АНИМАЦИЯ РАМКИ === */
+@keyframes gold-glow {
+  0%   { box-shadow: 0 0 4px rgba(255,215,0,0.25), inset 0 0 4px rgba(255,215,0,0.25); }
+  50%  { box-shadow: 0 0 9px rgba(255,215,0,0.6), inset 0 0 7px rgba(255,215,0,0.4); }
+  100% { box-shadow: 0 0 4px rgba(255,215,0,0.25), inset 0 0 4px rgba(255,215,0,0.25); }
+}
+
+/* === ТИР-СТРОКА === */
+.tier-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 14.5%; /* увеличено: карточки влезают */
+  border: 2px solid gold;
+  animation: gold-glow 3s infinite ease-in-out;
+}
+
+/* === ПОДЛОЖКИ === */
+.tier-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  z-index: 1;
+}
+
+.tier-s .tier-bg { background: linear-gradient(90deg, #ff4d4d, #ff8080); }
+.tier-a .tier-bg { background: linear-gradient(90deg, #ff9933, #ffcc66); }
+.tier-b .tier-bg { background: linear-gradient(90deg, #ffeb3b, #fff9a3); }
+.tier-c .tier-bg { background: linear-gradient(90deg, #bfff00, #ddff77); }
+.tier-d .tier-bg { background: linear-gradient(90deg, #66ff66, #b2ffb2); }
+
+/* === МЕТКИ ТИРОВ === */
+.tier-label {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  background-color: rgba(0,0,0,0.7);
+  border: 2px solid gold;
+  border-radius: 6px;
+  padding: 3px 6px;
+  color: gold;
+  font-size: 10px;
+  box-shadow: 0 0 5px rgba(255,215,0,0.3);
+}
+
+/* === КОНТЕЙНЕР КАРТОЧЕК === */
+.tier-castles {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+/* === КАРТОЧКИ === */
+.castle-card {
+  background-color: rgba(20, 20, 20, 0.9);
+  border: 2px solid rgba(255,255,255,0.25);
+  border-radius: 8px;
+  padding: 8px;
+  width: 165px;
+  text-align: center;
+  transition: 0.25s;
+  transform-origin: center;
+}
+
+.castle-card:hover {
+  transform: scale(1.07);
+  border-color: gold;
+  box-shadow: 0 0 10px gold;
+}
+
+/* === ИКОНКИ === */
+.castle-icon {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 4px;
+  image-rendering: pixelated;
+}
+
+/* === ТЕКСТ === */
+.castle-name {
+  font-size: 12px;
+  color: #fff;
+  margin-bottom: 3px;
+}
+
+.castle-info {
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+</style>
+</head>
+<body>
+
+<div id="menu-placeholder"></div>
+
+<h1>Текущая мета замков</h1>
+
+<div id="tiers-container">
+  <div class="tier-row tier-s"><div class="tier-bg"></div><div class="tier-label">S</div><div class="tier-castles" id="tier-s"></div></div>
+  <div class="tier-row tier-a"><div class="tier-bg"></div><div class="tier-label">A</div><div class="tier-castles" id="tier-a"></div></div>
+  <div class="tier-row tier-b"><div class="tier-bg"></div><div class="tier-label">B</div><div class="tier-castles" id="tier-b"></div></div>
+  <div class="tier-row tier-c"><div class="tier-bg"></div><div class="tier-label">C</div><div class="tier-castles" id="tier-c"></div></div>
+  <div class="tier-row tier-d"><div class="tier-bg"></div><div class="tier-label">D</div><div class="tier-castles" id="tier-d"></div></div>
+</div>
+
+<script src="js/main.js"></script>
+<script>
+const CASTLES_API_URL = "https://script.google.com/macros/s/AKfycbyRydwRG5pOJ4OGuP8nZ7XG9gKLbSxtXoWlBMR2-fJm2rQUGk1ojkLDkF9Pc0_UDrp7gw/exec";
+
+fetch("menu.html")
+  .then(r => r.text())
+  .then(d => {
+    document.getElementById("menu-placeholder").innerHTML = d;
+    if (typeof initMenu === "function") initMenu();
+    initTierListLoader();
+    loadTierList();
+  })
+  .catch(err => console.error("Ошибка загрузки меню:", err));
+
+/* === Лоадер === */
+function initTierListLoader() {
+  const loaderHTML = `
+    <div class="loader-container" id="loader">
+      <div class="loader-box">
+        <div class="loader-header">Загрузка статистики замков</div>
+        <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+        <div class="loader-text" id="loader-text">0%</div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('afterbegin', loaderHTML);
+}
+
+/* === Загрузка тир-листа === */
+async function loadTierList() {
+  const loader = document.getElementById('loader');
+  const loaderText = document.getElementById('loader-text');
+  const loaderFill = document.getElementById('loader-fill');
+
+  try {
+    let progress = 10;
+    loader.style.display = 'flex';
+    loaderText.textContent = '10%';
+
+    const res = await fetch(CASTLES_API_URL);
+    progress = 60; loaderText.textContent = '60%'; loaderFill.style.width = '60%';
+    const data = await res.json();
+
+    const castles = (data.castles || []).map(c => ({
+      ...c,
+      winrate: normalizeWinrate(c.winrate),
+      gold: Math.round(c.gold)
+    }));
+
+    progress = 90; loaderText.textContent = '90%'; loaderFill.style.width = '90%';
+
+    renderTierList(castles);
+
+    progress = 100;
+    loaderText.textContent = '100%';
+    loaderFill.style.width = '100%';
+    setTimeout(() => loader.remove(), 400);
+  } catch (err) {
+    console.error('Ошибка загрузки тир-листа:', err);
+    document.body.insertAdjacentHTML('beforeend',
+      `<div style="color:red;text-align:center;margin-top:20px;">Ошибка загрузки данных</div>`);
+    loader.remove();
+  }
+}
+
+/* === Преобразование винрейта === */
+function normalizeWinrate(val) {
+  const n = Number(String(val).replace(',', '.'));
+  if (isNaN(n)) return 0;
+  const percent = n < 1 ? n * 100 : n;
+  return Math.round(percent); // округляем до целого
+}
+
+/* === Отрисовка === */
+function renderTierList(castles) {
+  castles.sort((a,b)=>b.winrate - a.winrate);
+
+  const tiers = {
+    s: castles.slice(0, 2),
+    a: castles.slice(2, 5),
+    b: castles.slice(5, 8),
+    c: castles.slice(8, 10),
+    d: castles.slice(10, 11)
+  };
+
+  for (const [key, list] of Object.entries(tiers)) {
+    const container = document.getElementById(`tier-${key}`);
+    container.innerHTML = '';
+    list.forEach(c => {
+      const icon = window.castleIcons[c.name] || 'favicon.png';
+      const winColor = getGradientColor(c.winrate, 0, 100, [255, 0, 0], [0, 255, 0]);
+      const goldColor = getGradientColor(c.gold, -10000, 10000, [255, 0, 0], [0, 255, 0]);
+
+      const card = document.createElement('div');
+      card.className = 'castle-card';
+      card.innerHTML = `
+        <img src="${icon}" class="castle-icon" alt="${c.name}">
+        <div class="castle-name">${c.name}</div>
+        <div class="castle-info" style="color:${winColor}">Винрейт: ${c.winrate}%</div>
+        <div class="castle-info" style="color:${goldColor}">Деньги: ${c.gold}</div>
+        <div class="castle-info">Матчи: ${c.matches}</div>
+      `;
+      container.appendChild(card);
+    });
+  }
+}
+
+/* === Цветовые градиенты === */
+function getGradientColor(value, min, max, colorMin, colorMax) {
+  value = Math.max(min, Math.min(max, value));
+  const ratio = (value - min) / (max - min);
+  const r = Math.round(colorMin[0] + ratio * (colorMax[0] - colorMin[0]));
+  const g = Math.round(colorMin[1] + ratio * (colorMax[1] - colorMin[1]));
+  const b = Math.round(colorMin[2] + ratio * (colorMax[2] - colorMin[2]));
+  return `rgb(${r},${g},${b})`;
+}
+</script>
+
+
+
+</body>
+</html>
